@@ -85,7 +85,6 @@ class Dense1(Layer):
         
         Error1= np.random.normal(loc = 0, scale = 1 , size = (self.iternum,))
         Error2= np.random.normal(loc = 0, scale = 1 , size = (self.iternum,))
-        
 
         v1 = tf.reshape((self.W1 * inputs[:,0]) + (self.W2 * inputs[:,1]) + (self.W3 * inputs[:,2]) + (self.W4 * inputs[:,3]),(self.batch,1))
         
