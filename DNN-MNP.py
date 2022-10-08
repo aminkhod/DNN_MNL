@@ -63,6 +63,7 @@ import tensorflow as tf
 
 class DNN_MNP():
     def __init__(this, formula = 'y ~ .', batch = 100, iternum=200,):
+        this.parameters = None
         this.formula = formula
         this.batch = batch
         this.iternum = iternum
@@ -190,7 +191,8 @@ class DNN_MNP():
 
         a = [weight[1][0],weight[1][1],weight[1][2],weight[1][3],weight[1][4]]
 
-        parameters= np.array(a)
+        this.parameters = np.array(a)
+        return this.parameters
 
     """Extracting Weights__________________________________________________________"""
 
