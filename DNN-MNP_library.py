@@ -146,11 +146,9 @@ class DNN_MNP():
         Dense1 = this.Dense1(iternum=this.iternum, activation=this.activation)
         Utility1 = Sequential()
 
-        batch = 100
-        iternum=200
 
-        Utility1.add(tf.keras.layers.InputLayer((8,), batch_size=batch,name='inp_1'))
-        Utility1.add(Dense1(1,batch,iternum=iternum))
+        Utility1.add(tf.keras.layers.InputLayer((8, ), name='inp_1'))
+        Utility1.add(Dense1(1,iternum=this.iternum))
 
         mergedOutput1=Utility1.output
 
