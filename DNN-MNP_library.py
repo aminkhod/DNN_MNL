@@ -12,13 +12,13 @@ from random import seed
 seed(1)
 start = timeit.default_timer()
 
-import timeit
-from random import seed
+# import timeit
+
 from keras.models import Model
 from tensorflow.keras.models import Sequential
 
 import numpy as np 
-# import tensorflow.compat.v1.keras.backend as K
+import tensorflow.compat.v1.keras.backend as K
 import tensorflow as tf
 tf.compat.v1.disable_eager_execution()
 from matplotlib import pyplot as plt
@@ -62,12 +62,14 @@ import tensorflow as tf
                                    
 
 class DNN_MNP():
-    def __init__(this, formula = 'y ~ .', batch = 100, iternum=200,):
+    def __init__(this, formula = 'y ~ .', batch = 100, iternum=200,epochs=200, activation=None):
         this.parameters = None
         this.formula = formula
         this.batch = batch
         this.iternum = iternum
-        epochs = this.epochs, batch_size = this.batch
+        this.epochs = epochs
+        this.activation = activation
+        # this.batch = batch_size
     def dense_to_one_hot(this, labels_dense, num_classes):
         labels_dense = labels_dense.astype(np.int64)
         num_labels = labels_dense.shape[0]
@@ -78,11 +80,11 @@ class DNN_MNP():
         return labels_one_hot
     class Dense1(Layer):
         def __init__(self,
-                     units,batch,iternum,
+                     iternum=100,
                      activation=None, **kwargs):
-            self.units = units
+            # self.units = units
             self.activation = activations.get(activation)
-            self.batch = batch
+            # self.batch = batch
             self.iternum = iternum
 
 
@@ -141,7 +143,7 @@ class DNN_MNP():
 
 
     def creat_model(this):
-        Dense1 = this.Dense1(Layer)
+        Dense1 = this.Dense1(iternum=this.iternum, activation=this.activation)
         Utility1 = Sequential()
 
         batch = 100
@@ -173,7 +175,8 @@ class DNN_MNP():
 
 
     def fit_model(this, dataset, target):
-        this.Dataset = dataset
+        this.dataset = dataset
+        this.target = target
         this.new_model.compile(optimizer= 'adam', loss='categorical_crossentropy'  ,metrics=['categorical_accuracy'])
 
         weights_dict = {}
@@ -182,11 +185,14 @@ class DNN_MNP():
 
         callback = tf.keras.callbacks.EarlyStopping( monitor='loss',patience=20,mode='min')
 
-        history= this.new_model.fit( this.Dataset, target, epochs=this.epochs ,batch_size=this.batch,shuffle=True,callbacks=[cbk])
-        return history
+        history= this.new_model.fit( this.dataset, target, epochs=this.epochs ,batch_size=this.batch,shuffle=True,callbacks=[cbk])
+        this.weights_dict = weights_dict
+        this.history = history
+        return this.new_model
+
     """Extracting Weights__________________________________________________________"""
 
-    def Extracting_Weights(this):
+    def Estimated_parameters(this):
         weight = [layer.get_weights() for layer in this.new_model.layers]
 
         a = [weight[1][0],weight[1][1],weight[1][2],weight[1][3],weight[1][4]]
@@ -195,65 +201,61 @@ class DNN_MNP():
         return this.parameters
 
     """Extracting Weights__________________________________________________________"""
+    def plot_parameters_history(this):
+        weights_epochs = np.zeros((5,this.epochs))
 
+        for i in range(this.epochs):
+            weights_epochs[0,i]=this.weights_dict[i][0]
+            weights_epochs[1,i]=this.weights_dict[i][1]
+            weights_epochs[2,i]=this.weights_dict[i][2]
+            weights_epochs[3,i]=this.weights_dict[i][3]
+            weights_epochs[4,i]=this.weights_dict[i][4]
 
-
-
-    weights_epochs = np.zeros((5,epochs))
-
-    for i in range(epochs):
-        weights_epochs[0,i]=weights_dict[i][0]
-        weights_epochs[1,i]=weights_dict[i][1]
-        weights_epochs[2,i]=weights_dict[i][2]
-        weights_epochs[3,i]=weights_dict[i][3]
-        weights_epochs[4,i]=weights_dict[i][4]
-
-
-
-    epoch = np.arange(1, epochs+1, 1)
-    plt.plot(epoch, weights_epochs[0, :], label = "Ba")
-    plt.plot(epoch, weights_epochs[1, :],label = "Bb")
-    plt.plot(epoch, weights_epochs[2, :],label = "Bp")
-    plt.plot(epoch, weights_epochs[3, :],label = "Bq")
-    plt.plot(epoch, weights_epochs[4, :],label = "correlation")
+#ploting parameters history
+            epoch = np.arange(1, this.epochs+1, 1)
+            plt.plot(epoch, weights_epochs[0, :], label = "Ba")
+            plt.plot(epoch, weights_epochs[1, :],label = "Bb")
+            plt.plot(epoch, weights_epochs[2, :],label = "Bp")
+            plt.plot(epoch, weights_epochs[3, :],label = "Bq")
+            plt.plot(epoch, weights_epochs[4, :],label = "correlation")
 
 
 
 
 
-    plt.legend(loc="upper right")
-    plt.title('weights')
-    plt.ylabel('weights')
-    #plt.ylim(-13,+13)
-    plt.xlabel('epochs')
-    plt.show()
-
-
-    """weights_____________________________________________________________________"""
-
-    weights=[Ba,Bb,Bp,Bq,cor.iloc[1,0]]
-
-
-    k=[-1.5,0.0,0.1,0.2,0.3,0.4,0.5,1.5]
-
-
-    fig, ax = plt.subplots()
-    ax.scatter(weights, parameters,marker='o', color='blue')
-    ax.plot(k,k,color='green', linestyle='dashed',label="f(x)=x")
-    ax.set_title( 'Deep neural network')
-    ax.set_ylabel('Estimated values')
-    ax.set_xlabel('True values')
-    ax.grid(True)
-    plt.ylim(-1.5, +1.5)
-    plt.xlim(-1.5, +1.5)
-    plt.legend(loc='best')
-    plt.show()
+    # plt.legend(loc="upper right")
+    # plt.title('weights')
+    # plt.ylabel('weights')
+    # #plt.ylim(-13,+13)
+    # plt.xlabel('epochs')
+    # plt.show()
+    #
+    #
+    # """weights_____________________________________________________________________"""
+    #
+    # weights=[Ba,Bb,Bp,Bq,cor.iloc[1,0]]
+    #
+    #
+    # k=[-1.5,0.0,0.1,0.2,0.3,0.4,0.5,1.5]
+    #
+    #
+    # fig, ax = plt.subplots()
+    # ax.scatter(weights, parameters,marker='o', color='blue')
+    # ax.plot(k,k,color='green', linestyle='dashed',label="f(x)=x")
+    # ax.set_title( 'Deep neural network')
+    # ax.set_ylabel('Estimated values')
+    # ax.set_xlabel('True values')
+    # ax.grid(True)
+    # plt.ylim(-1.5, +1.5)
+    # plt.xlim(-1.5, +1.5)
+    # plt.legend(loc='best')
+    # plt.show()
 
 
     """ Time """
-    stop = timeit.default_timer()
+    # stop = timeit.default_timer()
 
-    print('Time: ', stop - start
+    # print('Time: ', stop - start
 
 
 
@@ -262,63 +264,97 @@ class DNN_MNP():
     # print(history.history.keys())
     
     """ summarise history for accuracy_____________________________________________"""
-
-    plt.plot(history.history['categorical_accuracy'])
-    plt.title('model accuracy')
-    plt.ylabel('accuracy')
-    plt.xlabel('epoch')
-    plt.legend()
-    plt.ylim(0.0, +1.0)
-    plt.show()
+    def summarise_history_accuracy(this):
+        plt.plot(this.history.history['categorical_accuracy'])
+        plt.title('model accuracy')
+        plt.ylabel('accuracy')
+        plt.xlabel('epoch')
+        plt.legend()
+        plt.ylim(0.0, +1.0)
+        plt.show()
 
     """ summarise history for loss_________________________________________________"""
+    def summarise_history_loss(this):
+        plt.plot(this.history.history['loss'])
+        plt.title('model loss')
+        plt.ylabel('loss')
+        plt.xlabel('epoch')
 
-    plt.plot(history.history['loss'])
-    plt.title('model loss')
-    plt.ylabel('loss')
-    plt.xlabel('epoch')
+        plt.legend()
+        plt.show()
 
-    plt.legend()
-    plt.show()
+    def STDError(this):
+        def get_inverse_Hessian(model, model_inputs, labels):
+
+            beta_layer = model.trainable_weights
+
+            beta_gradient = K.gradients(model.total_loss, beta_layer)
+
+            Hessian_lines_op = {}
+
+            for i in range(len(beta_layer)):
+                Hessian_lines_op[i] = K.gradients(beta_gradient[i], beta_layer)
+
+            input_tensors = model.inputs + model._feed_targets
+            get_Hess_funcs = {}
+            for i in range(len(Hessian_lines_op)):
+                get_Hess_funcs[i] = K.function(inputs=input_tensors, outputs=Hessian_lines_op[i])
+
+            Hessian = []
+            func_inputs = [model_inputs, labels]
+            for j in range(len(Hessian_lines_op)):
+                Hessian.append((np.array(get_Hess_funcs[j](func_inputs))))
+
+            Hessian = np.squeeze(Hessian)
+
+            return Hessian
 
 
+        mat = get_inverse_Hessian(this.new_model, this.dataset, this.target)
+        invHess = np.linalg.inv(mat)
+
+        invHess_abs = np.abs(invHess)
+
+        stds = [invHess_abs[i][i] ** 0.5 for i in range(invHess_abs.shape[0])]
+        return stds
 
 
     """STANDARD ERROR______________________________________________________________"""
 
-    matrix1 = np.zeros((4,4))
-
-    Data = Dataset.iloc[:,0:8]
-
-    y_pred = new_model.predict(Dataset.iloc[:, 1:11 ])
-
-
-    pred = pd.DataFrame(np.concatenate((y_pred[:,0:1],y_pred[:,0:1],
-                                        y_pred[:,1:2],y_pred[:,1:2]), axis= 1))
-
-    for i in range(4):
-        for j in range(4):
-            matrix1[i,j]= np.sum((Data.iloc[:,i] * Data.iloc[:,j]) * (pred.iloc[:,i]*pred.iloc[:,j]))
-
-
-
-
-    invHess1 = np.linalg.inv(matrix1)
-
-    stds1 = [invHess1[i][i]**0.5 for i in range(invHess1.shape[0])]
-
-
-
-"""End_________________________________________________________________________"""
+    # matrix1 = np.zeros((4,4))
+    #
+    # Data = Dataset.iloc[:,0:8]
+    #
+    # y_pred = new_model.predict(Dataset.iloc[:, 1:11 ])
+    #
+    #
+    # pred = pd.DataFrame(np.concatenate((y_pred[:,0:1],y_pred[:,0:1],
+    #                                     y_pred[:,1:2],y_pred[:,1:2]), axis= 1))
+    #
+    # for i in range(4):
+    #     for j in range(4):
+    #         matrix1[i,j]= np.sum((Data.iloc[:,i] * Data.iloc[:,j]) * (pred.iloc[:,i]*pred.iloc[:,j]))
+    #
+    #
+    #
+    #
+    # invHess1 = np.linalg.inv(matrix1)
+    #
+    # stds1 = [invHess1[i][i]**0.5 for i in range(invHess1.shape[0])]
 
 
-# stop = timeit.default_timer()
 
-# print('Time: ', stop - start)
-    def main():
-        ddd =DNN_MNP(a,b, c)
-        target = ddd.dense_to_one_hot(tar, num_classes)
-        ddd.fit_model(data, target)
+    """End_________________________________________________________________________"""
+
+
+    # stop = timeit.default_timer()
+
+    # print('Time: ', stop - start)
+    def main(this):
+        1-1
+        # ddd =DNN_MNP(a,b, c)
+        # target = ddd.dense_to_one_hot(tar, num_classes)
+        # ddd.fit_model(data, target)
         # Bp = -1
         # Ba = 0.5
         # Bb = 0.5
@@ -344,3 +380,23 @@ class DNN_MNP():
         #     return labels_one_hot
 
         # classes = dense_to_one_hot(labels_dense=Dataset['choice'], num_classes=2)
+        # matrix1 = np.zeros((4,4))
+        #
+        # Data = Dataset.iloc[:,0:8]
+        #
+        # y_pred = new_model.predict(Dataset.iloc[:, 1:11 ])
+        #
+        #
+        # pred = pd.DataFrame(np.concatenate((y_pred[:,0:1],y_pred[:,0:1],
+        #                                     y_pred[:,1:2],y_pred[:,1:2]), axis= 1))
+        #
+        # for i in range(4):
+        #     for j in range(4):
+        #         matrix1[i,j]= np.sum((Data.iloc[:,i] * Data.iloc[:,j]) * (pred.iloc[:,i]*pred.iloc[:,j]))
+        #
+        #
+        #
+        #
+        # invHess1 = np.linalg.inv(matrix1)
+        #
+        # stds1 = [invHess1[i][i]**0.5 for i in range(invHess1.shape[0])]
