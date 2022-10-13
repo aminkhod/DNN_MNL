@@ -2,8 +2,12 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="d5c22f6a-e5e6-47f5-ae3d-a753f84fe98b" name="Changes" comment="8th October">
+      <change beforePath="$PROJECT_DIR$/.idea/.name" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.name" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/DNN-MNP.py" beforeDir="false" afterPath="$PROJECT_DIR$/DNN-MNP_library.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Creating_Dataset.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/DNN-MNP.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/DNN-MNP.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/DNN-MNP_library.py" beforeDir="false" afterPath="$PROJECT_DIR$/DNN-MNP_library.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/__init__.py" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -25,6 +29,7 @@
   &quot;keyToString&quot;: {
     &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
     &quot;last_opened_file_path&quot;: &quot;C:/Program Files/Python38/python.exe&quot;,
     &quot;settings.editor.selected.configurable&quot;: &quot;com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable&quot;
   }
@@ -37,8 +42,12 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1665219998478</updated>
+      <workItem from="1665316646564" duration="1542000" />
     </task>
     <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
     <option name="TAB_STATES">
@@ -54,5 +63,16 @@
   <component name="VcsManagerConfiguration">
     <MESSAGE value="8th October" />
     <option name="LAST_COMMIT_MESSAGE" value="8th October" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$USER_HOME$/Downloads/MNL_Swissmetro2.py</url>
+          <line>18</line>
+          <option name="timeStamp" value="4" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
 </project>

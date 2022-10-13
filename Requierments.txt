@@ -16,3 +16,5 @@ import math
 from keras import activations
 from keras.layers import Layer
 import tensorflow as tf
+
+from keras.constraints import Constraint

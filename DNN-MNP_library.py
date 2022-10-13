@@ -54,7 +54,7 @@ from matplotlib import pyplot as plt
 
 # classes = dense_to_one_hot(labels_dense=Dataset['choice'], num_classes=2)
 """DNN Model___________________________________________________________________"""
-
+from keras.constraints import Constraint
 from keras import activations
 from keras.layers import Layer
 import tensorflow as tf
@@ -78,63 +78,98 @@ class DNN_MNP():
         labels_one_hot.flat[index_offset + labels_dense.ravel()] = 1
 
         return labels_one_hot
+
+    def attach(self, df):
+        self.dataset = df
+        for col in self.dataset.columns:
+            globals()[col] = self.dataset[col]
+
+
     class Dense1(Layer):
-        def __init__(self,
-                     iternum=100,
+
+        def __init__(self,iternum,
                      activation=None, **kwargs):
-            # self.units = units
             self.activation = activations.get(activation)
-            # self.batch = batch
             self.iternum = iternum
-
-
+    
+    
             super().__init__(**kwargs)
-
-
+    
+        # def addWeight(self, name='',shape=(1,), constraint=None):
+        #     return self.add_weight(name=name,shape=shape, constraint=constraint)
         def build(self, input_shape):
-            self.W1 = self.add_weight(name='Ba',shape=(1,))
-            self.W2 = self.add_weight(name='Bb',shape=(1,))
+            class FreezeSlice(Constraint):
+
+                def __init__(self, values, slice):
+                    if hasattr(values, "numpy"):
+                        self.values = values.numpy()
+                    elif isinstance(values, np.ndarray):
+                        self.values = values
+                    else:
+                        try:
+                            self.values = values.to_numpy()
+                        except:
+                            self.values = np.array(values)
+
+                    self.values = values
+                    self.slice = slice
+
+                def __call__(self, w):
+                    zs = np.zeros(w.shape)
+                    zs[self.slice] = self.values
+                    os = np.ones(w.shape)
+                    os[self.slice] = 0
+                    return w * os + zs
+
+            self.W1 = self.addWeight(name='Ba',shape=(1,), constraint=FreezeSlice([3.0],np.s_[[0]]))
+            self.W2 = self.addWeight(name='Bb',shape=(1,))
             self.W3 = self.add_weight(name='Bp',shape=(1,))
             self.W4 = self.add_weight(name='Bq',shape=(1,))
             self.W5 = self.add_weight(name='cor',shape=(1,),initializer = tf.keras.initializers.Constant(0.5),
                                           trainable=True,constraint=tf.keras.constraints.MinMaxNorm(max_value=0.98))
-
+            
             super().build(input_shape)
-
+    
         def call(self, inputs, **kwargs):
-
-
+            
+            
+            
+            
             Error1= np.random.normal(loc = 0, scale = 1 , size = (self.iternum,))
             Error2= np.random.normal(loc = 0, scale = 1 , size = (self.iternum,))
-
-
+            
+            
+    
             inp=tf.cast(tf.transpose(tf.stack((Error1,Error2))), tf.float32)
             o=tf.constant([0.0])
             p=tf.constant([1.0])
-
-
+            
+            
+            
             row1=tf.reshape(tf.stack([p,o]),(2,))
-
+            
             row2=tf.reshape(tf.stack([self.W5,tf.sqrt(p-tf.square(self.W5))]),(2,))
-
+            
             L = tf.stack([row1,row2])
-
+    
             error=self.activation(tf.matmul(inp,L))
-
+    
             v1 = tf.expand_dims((self.W1 * inputs[:,0]) + (self.W2 * inputs[:,1]) + (self.W3 * inputs[:,2]) + (self.W4 * inputs[:,3]),axis = 1)
-
-
+            
+    
             out1=tf.expand_dims(tf.matmul(v1,tf.ones((1, self.iternum), tf.float32))+ error[:,0],axis = 1)
-
+            
+    
+    
             v2 =tf.expand_dims((self.W1 * inputs[:,4]) + (self.W2 * inputs[:,5]) + (self.W3 * inputs[:,6])+ (self.W4 * inputs[:,7]),axis = 1)
-
+    
             out2=tf.expand_dims(tf.matmul(v2,tf.ones((1, self.iternum), tf.float32))+ error[:,1],axis = 1)
             out1 = out1 - out2
-
+            
             out2 = out2 - out2
-
+            
             Scores = tf.experimental.numpy.hstack((out1, out2))
-
+            
             return Scores
 
 
@@ -143,12 +178,13 @@ class DNN_MNP():
 
 
     def creat_model(this):
-        Dense1 = this.Dense1(iternum=this.iternum, activation=this.activation)
+        #Dense1 = this.Dense1(iternum=this.iternum, activation=this.activation)
         Utility1 = Sequential()
 
 
-        Utility1.add(tf.keras.layers.InputLayer((8, ), name='inp_1'))
-        Utility1.add(Dense1(1,iternum=this.iternum))
+
+        Utility1.add(tf.keras.layers.InputLayer((8,),name='inp_1'))
+        Utility1.add(this.Dense1(iternum=this.iternum))
 
         mergedOutput1=Utility1.output
 
@@ -349,10 +385,14 @@ class DNN_MNP():
 
     # print('Time: ', stop - start)
     def main(this):
-        1-1
-        # ddd =DNN_MNP(a,b, c)
-        # target = ddd.dense_to_one_hot(tar, num_classes)
-        # ddd.fit_model(data, target)
+        import pandas as pd
+        ddd =DNN_MNP(formula="a")
+        Dataset = pd.read_excel('Dataset_MNP.xlsx') 
+
+        Dataset.drop('Unnamed: 0', inplace=True, axis=1)
+        target = ddd.dense_to_one_hot(Dataset['choice'], 2)
+        ddd.creat_model()
+        ddd.fit_model(Dataset.iloc[:,:-1], target)
         # Bp = -1
         # Ba = 0.5
         # Bb = 0.5
