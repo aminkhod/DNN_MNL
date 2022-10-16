@@ -84,6 +84,29 @@ class DNN_MNP():
         for col in self.dataset.columns:
             globals()[col] = self.dataset[col]
 
+    # class Beta:
+    #     BetaList = []
+    #     # global BetaList
+    #
+    #     def __init__(self, name, initial_value=np.random.normal(0,1), constraint=0):
+    #         self.name = name
+    #         self.initialValue = initial_value
+    #         self.constraint = constraint
+    #
+    #         if self.name not in Beta.BetaList:
+    #             Beta.BetaList.append(self.name)
+    #             raise Exception('The Beta name is taken before. Please select unique name for your Beta.')
+    #
+    #     def get_name(self):
+    #         return self.name
+    #     def get_constraint(self):
+    #         return self.constraint
+    #     def get_initialValue(self):
+    #         return self.initialValue
+    #     def remove(self):
+    #         Beta.BetaList.pop(self.name)
+    #         del self
+
 
     class Dense1(Layer):
 
@@ -384,15 +407,22 @@ class DNN_MNP():
     # stop = timeit.default_timer()
 
     # print('Time: ', stop - start)
-    def main(this):
-        import pandas as pd
-        ddd =DNN_MNP(formula="a")
-        Dataset = pd.read_excel('Dataset_MNP.xlsx') 
+    if __name__ == '__main__':
+        from Beta import Beta
 
-        Dataset.drop('Unnamed: 0', inplace=True, axis=1)
-        target = ddd.dense_to_one_hot(Dataset['choice'], 2)
-        ddd.creat_model()
-        ddd.fit_model(Dataset.iloc[:,:-1], target)
+        ASC_TRAIN = Beta('ASC', 0, 0)
+        ASC_SM = Beta('ASCc', 0, 0)
+
+        # import pandas as pd
+        # ddd =DNN_MNP(formula="a")
+        # Dataset = pd.read_excel('Dataset_MNP.xlsx')
+        #
+        # Dataset.drop('Unnamed: 0', inplace=True, axis=1)
+        # target = ddd.dense_to_one_hot(Dataset['choice'], 2)
+        # ddd.creat_model()
+        # ddd.fit_model(Dataset.iloc[:,:-1], target)
+
+
         # Bp = -1
         # Ba = 0.5
         # Bb = 0.5
