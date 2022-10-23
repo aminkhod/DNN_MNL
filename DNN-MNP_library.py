@@ -17,11 +17,15 @@ start = timeit.default_timer()
 from keras.models import Model
 from tensorflow.keras.models import Sequential
 
+import pandas as pd
 import numpy as np 
 import tensorflow.compat.v1.keras.backend as K
 import tensorflow as tf
 tf.compat.v1.disable_eager_execution()
 from matplotlib import pyplot as plt
+
+from Beta import Beta
+from Formula import Formula
 # import pandas as pd
 # from keras.constraints import Constraint
 
@@ -62,14 +66,13 @@ import tensorflow as tf
                                    
 
 class DNN_MNP():
-    def __init__(this, formula = 'y ~ .', batch = 100, iternum=200,epochs=200, activation=None):
+    def __init__(this, batch = 100, iternum=200,epochs=200, activation=None):
         this.parameters = None
-        this.formula = formula
         this.batch = batch
         this.iternum = iternum
         this.epochs = epochs
         this.activation = activation
-        # this.batch = batch_size
+
     def dense_to_one_hot(this, labels_dense, num_classes):
         labels_dense = labels_dense.astype(np.int64)
         num_labels = labels_dense.shape[0]
@@ -407,18 +410,23 @@ class DNN_MNP():
     # stop = timeit.default_timer()
 
     # print('Time: ', stop - start)
-    if __name__ == '__main__':
-        from Beta import Beta
+if __name__ == '__main__':
+        ddd = DNN_MNP()
+        Dataset = pd.read_excel('Dataset_MNP.xlsx')
+
+        Dataset.drop('Unnamed: 0', inplace=True, axis=1)
+        target = ddd.dense_to_one_hot(Dataset['choice'], 2)
+        ddd.attach(Dataset)
+        # print(Dataset.columns)
 
         ASC_TRAIN = Beta('ASC', 0, 0)
         ASC_SM = Beta('ASCc', 0, 0)
-
-        # import pandas as pd
-        # ddd =DNN_MNP(formula="a")
-        # Dataset = pd.read_excel('Dataset_MNP.xlsx')
+        f1 = Formula((ASC_TRAIN, a1), (ASC_SM, b1))
+        print(Formula.formulaList[0].get_args())
+        # for f in Formula.formulaList:
+        #     print(f.get_args())
+        # f2 = formula()
         #
-        # Dataset.drop('Unnamed: 0', inplace=True, axis=1)
-        # target = ddd.dense_to_one_hot(Dataset['choice'], 2)
         # ddd.creat_model()
         # ddd.fit_model(Dataset.iloc[:,:-1], target)
 
