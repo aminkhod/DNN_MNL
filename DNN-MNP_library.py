@@ -5,6 +5,7 @@ Created on Wed Jun 22 10:46:24 2022
 
 @author: Niousha
 """
+from builtins import isinstance
 
 """library_____________________________________________________________________"""
 import timeit
@@ -113,8 +114,10 @@ class DNN_MNP():
 
     class Dense1(Layer):
 
-        def __init__(self,iternum,
+        def __init__(self,iternum, formula, BetaList,
                      activation=None, **kwargs):
+            self.formula = formula
+            self.BetaList = BetaList
             self.activation = activations.get(activation)
             self.iternum = iternum
     
@@ -146,39 +149,43 @@ class DNN_MNP():
                     os = np.ones(w.shape)
                     os[self.slice] = 0
                     return w * os + zs
+            wList = []
+            for beta in self.BetaList:
+                wList.append(self.add_weight(name=beta.name,shape=(1,),
+                constraint=FreezeSlice([beta.initial_value],np.s_[[0]]) if beta.constraint == 1 else None))
 
-            self.W1 = self.addWeight(name='Ba',shape=(1,), constraint=FreezeSlice([3.0],np.s_[[0]]))
-            self.W2 = self.addWeight(name='Bb',shape=(1,))
-            self.W3 = self.add_weight(name='Bp',shape=(1,))
-            self.W4 = self.add_weight(name='Bq',shape=(1,))
-            self.W5 = self.add_weight(name='cor',shape=(1,),initializer = tf.keras.initializers.Constant(0.5),
-                                          trainable=True,constraint=tf.keras.constraints.MinMaxNorm(max_value=0.98))
-            
+
+                        # self.W1 = self.add_weight(name='Ba',shape=(1,), constraint=FreezeSlice([3.0],np.s_[[0]]))
+                        # self.W2 = self.add_weight(name='Bb',shape=(1,))
+                        # self.W3 = self.add_weight(name='Bp',shape=(1,))
+                        # self.W4 = self.add_weight(name='Bq',shape=(1,))
+                        # self.W5 = self.add_weight(name='cor',shape=(1,),initializer = tf.keras.initializers.Constant(0.5),
+                        #                           trainable=True,constraint=tf.keras.constraints.MinMaxNorm(max_value=0.98))
+            print(wList)
+            self.wList = wList
             super().build(input_shape)
     
         def call(self, inputs, **kwargs):
-            
-            
-            
-            
-            Error1= np.random.normal(loc = 0, scale = 1 , size = (self.iternum,))
-            Error2= np.random.normal(loc = 0, scale = 1 , size = (self.iternum,))
-            
-            
+            ErrorList = []
+            vList = []
+            for formula in self.formula:
+                ErrorList.append(np.random.normal(loc = 0, scale = 1 , size = (self.iternum,)))
+            # Error1= np.random.normal(loc = 0, scale = 1 , size = (self.iternum,))
+            # Error2= np.random.normal(loc = 0, scale = 1 , size = (self.iternum,))
+
+
     
-            inp=tf.cast(tf.transpose(tf.stack((Error1,Error2))), tf.float32)
-            o=tf.constant([0.0])
-            p=tf.constant([1.0])
-            
-            
-            
-            row1=tf.reshape(tf.stack([p,o]),(2,))
-            
-            row2=tf.reshape(tf.stack([self.W5,tf.sqrt(p-tf.square(self.W5))]),(2,))
-            
-            L = tf.stack([row1,row2])
-    
-            error=self.activation(tf.matmul(inp,L))
+            # inp=tf.cast(tf.transpose(tf.stack((Error1,Error2))), tf.float32)
+            # o=tf.constant([0.0])
+            # p=tf.constant([1.0])
+            #
+            # row1=tf.reshape(tf.stack([p,o]),(2,))
+            #
+            # row2=tf.reshape(tf.stack([self.W5,tf.sqrt(p-tf.square(self.W5))]),(2,))
+            #
+            # L = tf.stack([row1,row2])
+            #
+            # error=self.activation(tf.matmul(inp,L))
     
             v1 = tf.expand_dims((self.W1 * inputs[:,0]) + (self.W2 * inputs[:,1]) + (self.W3 * inputs[:,2]) + (self.W4 * inputs[:,3]),axis = 1)
             
@@ -203,14 +210,14 @@ class DNN_MNP():
             return x
 
 
-    def creat_model(this):
+    def creat_model(this, formula, BetaList):
         #Dense1 = this.Dense1(iternum=this.iternum, activation=this.activation)
         Utility1 = Sequential()
 
 
 
         Utility1.add(tf.keras.layers.InputLayer((8,),name='inp_1'))
-        Utility1.add(this.Dense1(iternum=this.iternum))
+        Utility1.add(this.Dense1(formula=formula, BetaList=BetaList, iternum=this.iternum))
 
         mergedOutput1=Utility1.output
 
@@ -421,14 +428,20 @@ if __name__ == '__main__':
 
         ASC_TRAIN = Beta('ASC', 0, 0)
         ASC_SM = Beta('ASCc', 0, 0)
+        print(type(ASC_SM))
         f1 = Formula((ASC_TRAIN, a1), (ASC_SM, b1))
-        print(Formula.formulaList[0].get_args())
-        # for f in Formula.formulaList:
-        #     print(f.get_args())
+        f2 = Formula((ASC_TRAIN, b1))
+        # print(Formula.formulaList[0].get_args())
+
+        for f in Formula.formulaList:
+            print(f.get_args())
         # f2 = formula()
-        #
-        # ddd.creat_model()
+
+        ddd.creat_model(formula=Formula.formulaList, BetaList=Beta.BetaList)
         # ddd.fit_model(Dataset.iloc[:,:-1], target)
+
+
+        # newModel = DNN_MNP()
 
 
         # Bp = -1
