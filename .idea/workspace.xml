@@ -3,7 +3,9 @@
   <component name="ChangeListManager">
     <list default="true" id="d5c22f6a-e5e6-47f5-ae3d-a753f84fe98b" name="Changes" comment="8th October">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Beta.py" beforeDir="false" afterPath="$PROJECT_DIR$/Beta.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/DNN-MNP_library.py" beforeDir="false" afterPath="$PROJECT_DIR$/DNN-MNP_library.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Formula.py" beforeDir="false" afterPath="$PROJECT_DIR$/Formula.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

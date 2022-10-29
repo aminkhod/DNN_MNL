@@ -116,6 +116,7 @@ class DNN_MNP():
 
         def __init__(self,iternum, formula, BetaList,
                      activation=None, **kwargs):
+            self.wList = None
             self.formula = formula
             self.BetaList = BetaList
             self.activation = activations.get(activation)
@@ -153,14 +154,12 @@ class DNN_MNP():
             for beta in self.BetaList:
                 wList.append(self.add_weight(name=beta.name,shape=(1,),
                 constraint=FreezeSlice([beta.initial_value],np.s_[[0]]) if beta.constraint == 1 else None))
-
-
-                        # self.W1 = self.add_weight(name='Ba',shape=(1,), constraint=FreezeSlice([3.0],np.s_[[0]]))
-                        # self.W2 = self.add_weight(name='Bb',shape=(1,))
-                        # self.W3 = self.add_weight(name='Bp',shape=(1,))
-                        # self.W4 = self.add_weight(name='Bq',shape=(1,))
-                        # self.W5 = self.add_weight(name='cor',shape=(1,),initializer = tf.keras.initializers.Constant(0.5),
-                        #                           trainable=True,constraint=tf.keras.constraints.MinMaxNorm(max_value=0.98))
+                # self.W1 = self.add_weight(name='Ba',shape=(1,), constraint=FreezeSlice([3.0],np.s_[[0]]))
+                # self.W2 = self.add_weight(name='Bb',shape=(1,))
+                # self.W3 = self.add_weight(name='Bp',shape=(1,))
+                # self.W4 = self.add_weight(name='Bq',shape=(1,))
+                # self.W5 = self.add_weight(name='cor',shape=(1,),initializer = tf.keras.initializers.Constant(0.5),
+                #                           trainable=True,constraint=tf.keras.constraints.MinMaxNorm(max_value=0.98))
             print(wList)
             self.wList = wList
             super().build(input_shape)
@@ -428,11 +427,13 @@ if __name__ == '__main__':
 
         ASC_TRAIN = Beta('ASC', 0, 0)
         ASC_SM = Beta('ASCc', 0, 0)
-        print(type(ASC_SM))
+        ASC = Beta('newASC', 4, 1)
+        # print(type(ASC_SM))
         f1 = Formula((ASC_TRAIN, a1), (ASC_SM, b1))
         f2 = Formula((ASC_TRAIN, b1))
+        f3 = Formula((ASC))
         # print(Formula.formulaList[0].get_args())
-
+        # print(Formula.formulaList)
         for f in Formula.formulaList:
             print(f.get_args())
         # f2 = formula()

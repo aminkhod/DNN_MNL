@@ -1,3 +1,4 @@
+from Beta import Beta
 class Formula:
     formulaList = []
 
@@ -17,14 +18,20 @@ class Formula:
 
     def get_args(self):
         text = ''
+        # print(self.args[0].name)
         for arg in self.args:
-            # print(arg[0])
-            text += '(' + arg[0].name
-            try:
-                text += ' * ' + arg[1].name + ')'
-            except:
-                text += ' * ' + str(arg[1]) + ')'
-            text += ' + '
+            # print(type(arg))
+            if isinstance(arg, Beta):
+                text += '(' + arg.name + ')'
+                text += ' + '
+            else:
+                text += '(' + arg[0].name
+                try:
+                    text += ' * ' + arg[1].name + ')'
+                except:
+                    text += ' * ' + str(arg[1]) + ')'
+                text += ' + '
+
         text = text[:-3]
 
         return text

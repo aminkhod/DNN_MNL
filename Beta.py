@@ -2,19 +2,21 @@ import numpy as np
 class Beta:
 
     BetaList = []
+    BetaName = []
     # global BetaList
 
     def __init__(self, name, initial_value=np.random.normal(0, 1), constraint=0):
 
         self.error = False
-        if name not in Beta.BetaList:
-            Beta.BetaList.append(name)
+        if name not in Beta.BetaName:
+            Beta.BetaList.append(self)
+            Beta.BetaName.append(name)
         else:
             self.error = True
             raise Exception('The Beta name is taken before. Please s elect unique name for your Beta.')
             self.__del__()
         self.name = name
-        self.initialValue = initial_value
+        self.initial_value = initial_value
         self.constraint = constraint
 
 
@@ -31,5 +33,7 @@ class Beta:
     def __del__(self):
         if self.error:
             Beta.BetaList = list(set(Beta.BetaList))
+            Beta.BetaName = list(set(Beta.BetaName))
+
         else:
-            Beta.BetaList.remove(self.name)
+            Beta.BetaName.remove(self.name)
