@@ -118,14 +118,15 @@ class DNN_MNP():
 
     class Dense1(Layer):
 
-        def __init__(self, iternum, formula, BetaList,
+        def __init__(self, iternum, formula, BetaList, probit=False,
                      activation=None, **kwargs):
             self.wList = None
             self.vList = None
             self.errorList = None
             self.outList = None
-            self.formula = formula
+            self.formulas = formula
             self.BetaList = BetaList
+            self.probit = probit
             self.activation = activations.get(activation)
             self.iternum = iternum
 
@@ -158,12 +159,26 @@ class DNN_MNP():
                     return w * os + zs
 
             wList = []
-            for beta in self.BetaList:
-                wList.append(self.add_weight(name=beta.name, shape=(1,),
-                                             constraint=FreezeSlice([beta.initial_value],
-                                                                    np.s_[[0]]) if beta.constraint == 1 else None))
+            BetaNames = []
+            for formula in self.formulas:
+
+                for arg in formula.args:
+                    if isinstance(arg, tuple):
+                        if arg[0].name not in BetaNames:
+                            wList.append(self.add_weight(name=arg[0].name, shape=(1,),
+                                                 constraint=FreezeSlice([arg[0].initial_value],
+                                                np.s_[[0]]) if arg[0].constraint == 1 else None))
+                            BetaNames.append(arg[0].name)
+                    if isinstance(arg, Beta):
+                        if arg.name not in BetaNames:
+                            wList.append(self.add_weight(name=arg.name, shape=(1,),
+                                                     constraint=FreezeSlice([arg.initial_value],
+                                                      np.s_[[0]]) if arg.constraint == 1 else None))
+                            BetaNames.append(arg.name)
+
                 # self.W1 = self.add_weight(name='Ba',shape=(1,), constraint=FreezeSlice([3.0],np.s_[[0]]))
                 # self.W2 = self.add_weight(name='Bb',shape=(1,))
+
                 # self.W3 = self.add_weight(name='Bp',shape=(1,))
                 # self.W4 = self.add_weight(name='Bq',shape=(1,))
                 # self.W5 = self.add_weight(name='cor',shape=(1,),initializer = tf.keras.initializers.Constant(0.5),
@@ -177,38 +192,71 @@ class DNN_MNP():
             vList = []
             outList = []
             r, c = inputs.shape
-            formulaindex = 0
-            for formula in self.formula:
+
+            for formula in self.formulas:
                 error = np.random.normal(loc=0, scale=1, size=(self.iternum,))
-                errorList.append(error)
                 # print(type(formula.args))
+                errorList.append(error)
 
                 # Error1= np.random.normal(loc = 0, scale = 1 , size = (self.iternum,))
                 # Error2= np.random.normal(loc = 0, scale = 1 , size = (self.iternum,))
 
-                # inp=tf.cast(tf.transpose(tf.stack((Error1,Error2))), tf.float32)
-                # o=tf.constant([0.0])
-                # p=tf.constant([1.0])
-                #
-                # row1=tf.reshape(tf.stack([p,o]),(2,))
-                #
-                # row2=tf.reshape(tf.stack([self.W5,tf.sqrt(p-tf.square(self.W5))]),(2,))
-                #
-                # L = tf.stack([row1,row2])
-                #
-                # error=self.activation(tf.matmul(inp,L))
+            if len(self.formulas) > 3:
+                raise Exception('This model is not able to handel more than three formulas.')
+            print(self.wList)
 
-                # v1 = (self.W1 * inputs[:, 0]) + (self.W2 * inputs[:, 1]) + \
-                #      (self.W3 * inputs[:, 2]) + (self.W4 * inputs[:, 3])
-                # out1 = tf.expand_dims(tf.matmul(v1, tf.ones((1, self.iternum), tf.float32)) + error[:, 0], axis=1)
-                #
-                # v2 = tf.expand_dims((self.W1 * inputs[:, 4]) + (self.W2 * inputs[:, 5]) +
-                #                     (self.W3 * inputs[:, 6]) + (self.W4 * inputs[:, 7]), axis=1)
-                #
-                # out2 = tf.expand_dims(tf.matmul(v2, tf.ones((1, self.iternum), tf.float32)) + error[:, 1], axis=1)
-                # out1 = out1 - out2
-                # out2 = out2 - out2
+            if self.probit:
+                inp = tf.cast(tf.transpose(tf.stack(tuple(errorList))), tf.float32)
+                if len(self.formulas) == 2:
+                    self.wList.append(self.add_weight(name='cor',shape=(1,),initializer = tf.keras.initializers.Constant(0.5),
+                                          trainable=True,constraint=tf.keras.constraints.MinMaxNorm(max_value=0.98)))
 
+                    # print(self.wList)
+                    o = tf.constant([0.0])
+                    p = tf.constant([1.0])
+
+                    row1 = tf.reshape(tf.stack([p, o]), (2, ))
+
+                    row2 = tf.reshape(tf.stack([self.wList[-1], tf.sqrt(p-tf.square(self.wList[-1]))]), (2, ))
+
+                    L = tf.stack([row1, row2])
+
+                    error = self.activation(tf.matmul(inp, L))
+                    errorList[0] = error[:, 0]
+                    errorList[1] = error[:, 1]
+                if len(self.formulas) == 3:
+                    inp = tf.cast(tf.transpose(tf.stack(tuple(errorList))), tf.float32)
+
+                    self.wList.append(
+                        self.add_weight(name='cor0', shape=(1,), initializer=tf.keras.initializers.Constant(0.5),
+                                        trainable=True, constraint=tf.keras.constraints.MinMaxNorm(max_value=0.98)))
+                    self.wList.append(
+                        self.add_weight(name='cor1', shape=(1,), initializer=tf.keras.initializers.Constant(0.5),
+                                        trainable=True, constraint=tf.keras.constraints.MinMaxNorm(max_value=0.98)))
+                    self.wList.append(
+                        self.add_weight(name='cor2', shape=(1,), initializer=tf.keras.initializers.Constant(0.5),
+                                        trainable=True, constraint=tf.keras.constraints.MinMaxNorm(max_value=0.98)))
+
+                    print(self.wList)
+                    o = tf.constant([0.0])
+                    p = tf.constant([1.0])
+
+                    row1 = tf.reshape(tf.stack([p, o, o]), (3,))
+
+                    row2 = tf.reshape(tf.stack([self.wList[-3], tf.sqrt(p - tf.square(self.wList[-3])), o]), (3,))
+                    row3 = tf.reshape(tf.stack([self.wList[-2], self.wList[-1],
+                                                tf.sqrt(p - tf.square(self.wList[-2]) -
+                                                tf.square(self.wList[-1]))]), (3,))
+
+                    L = tf.stack([row1, row2, row3])
+
+                    error = self.activation(tf.matmul(inp, L))
+                    errorList[0] = error[:, 0]
+                    errorList[1] = error[:, 1]
+                    errorList[2] = error[:, 2]
+
+            formulaindex = 0
+            for formula in self.formulas:
                 weight_input = 0
                 betaindex, inputindex = 0, 0  # index for Betas and inputs
                 for arg in formula.args:
@@ -222,18 +270,28 @@ class DNN_MNP():
 
                     v = tf.expand_dims(weight_input, axis=1)
                     out = tf.expand_dims(tf.matmul(v, tf.ones((1, self.iternum),
-                                                              tf.float32)) + error, axis=1)
+                                                              tf.float32)) + errorList[formulaindex], axis=1)
                     vList.append(v)
                     outList.append(out)
 
                 formulaindex += 1
+                # v1 = (self.W1 * inputs[:, 0]) + (self.W2 * inputs[:, 1]) + \
+                #      (self.W3 * inputs[:, 2]) + (self.W4 * inputs[:, 3])
+                # out1 = tf.expand_dims(tf.matmul(v1, tf.ones((1, self.iternum), tf.float32)) + error[:, 0], axis=1)
+                #
+                # v2 = tf.expand_dims((self.W1 * inputs[:, 4]) + (self.W2 * inputs[:, 5]) +
+                #                     (self.W3 * inputs[:, 6]) + (self.W4 * inputs[:, 7]), axis=1)
+                #
+                # out2 = tf.expand_dims(tf.matmul(v2, tf.ones((1, self.iternum), tf.float32)) + error[:, 1], axis=1)
+                # out1 = out1 - out2
+                # out2 = out2 - out2
 
             self.errorList = errorList
             self.outList = outList
             self.vList = vList
-            print('errorList', self.errorList)
-            print('self.outList', self.outList)
-            print('self.vList', self.vList)
+            # print('errorList', self.errorList)
+            # print('self.outList', self.outList)
+            # print('self.vList', self.vList)
 
             Scores = tf.experimental.numpy.hstack(tuple(outList))
 
@@ -242,12 +300,12 @@ class DNN_MNP():
         def F(x):
             return x
 
-    def creat_model(this, formula, BetaList):
+    def creat_model(this, formula, BetaList, probit=False):
         # Dense1 = this.Dense1(iternum=this.iternum, activation=this.activation)
         Utility1 = Sequential()
 
         Utility1.add(tf.keras.layers.InputLayer((8,), name='inp_1'))
-        Utility1.add(this.Dense1(formula=formula, BetaList=BetaList, iternum=this.iternum))
+        Utility1.add(this.Dense1(formula=formula, probit=probit,  BetaList=BetaList, iternum=this.iternum))
 
         mergedOutput1 = Utility1.output
 
@@ -462,7 +520,7 @@ if __name__ == '__main__':
     #     print(f.get_args())
     # print(Formula.dataFrame)
 
-    ddd.creat_model(formula=Formula.formulaList, BetaList=Beta.BetaList)
+    ddd.creat_model(formula=Formula.formulaList, BetaList=Beta.BetaList, probit=True)
     # ddd.fit_model(target)
 
     # newModel = DNN_MNP()
