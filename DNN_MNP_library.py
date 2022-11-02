@@ -5,70 +5,32 @@ Created on Wed Jun 22 10:46:24 2022
 
 @author: Niousha
 """
-from builtins import isinstance
 
-import keras.initializers
 
 
 """library_____________________________________________________________________"""
-import timeit
 from random import seed
-
 seed(1)
-start = timeit.default_timer()
 
-# import timeit
-
-from keras.models import Model
-from tensorflow.keras.models import Sequential
+from builtins import isinstance
 
 import pandas as pd
 import numpy as np
-import tensorflow.compat.v1.keras.backend as K
-import tensorflow as tf
 
-tf.compat.v1.disable_eager_execution()
 from matplotlib import pyplot as plt
 
 from Beta import Beta
 from Formula import Formula
 
-# import pandas as pd
-# from keras.constraints import Constraint
-
-# import math
-"""Dataset_____________________________________________________________________"""
-
-# Bp = -1
-# Ba = 0.5
-# Bb = 0.5
-# Bq = 1
-
-# Dataset = pd.read_excel('Dataset_MNP.xlsx')
-
-# cor = pd.read_excel('Cor_MNP.xlsx')
-
-# cor.drop('Unnamed: 0', inplace=True, axis=1) 
-
-# True_val= [Bp,Ba,Bb,Bq,cor.iloc[1,0]]
-
-# Dataset.drop('Unnamed: 0', inplace=True, axis=1)
-
-# def dense_to_one_hot(labels_dense, num_classes):
-#     labels_dense = labels_dense.astype(np.int64)
-#     num_labels = labels_dense.shape[0]
-#     index_offset = np.arange(num_labels) * num_classes
-#     labels_one_hot = np.zeros((num_labels, num_classes))
-#     labels_one_hot.flat[index_offset + labels_dense.ravel()] = 1
-
-#     return labels_one_hot
-
-# classes = dense_to_one_hot(labels_dense=Dataset['choice'], num_classes=2)
 """DNN Model___________________________________________________________________"""
 from keras.constraints import Constraint
 from keras import activations
 from keras.layers import Layer
+from keras.models import Model
+from tensorflow.keras.models import Sequential
 import tensorflow as tf
+tf.compat.v1.disable_eager_execution()
+import tensorflow.compat.v1.keras.backend as K
 
 
 class DNN_MNP():
@@ -97,28 +59,6 @@ class DNN_MNP():
         for col in self.dataset.columns:
             globals()[col] = self.dataset[col]
 
-    # class Beta:
-    #     BetaList = []
-    #     # global BetaList
-    #
-    #     def __init__(self, name, initial_value=np.random.normal(0,1), constraint=0):
-    #         self.name = name
-    #         self.initialValue = initial_value
-    #         self.constraint = constraint
-    #
-    #         if self.name not in Beta.BetaList:
-    #             Beta.BetaList.append(self.name)
-    #             raise Exception('The Beta name is taken before. Please select unique name for your Beta.')
-    #
-    #     def get_name(self):
-    #         return self.name
-    #     def get_constraint(self):
-    #         return self.constraint
-    #     def get_initialValue(self):
-    #         return self.initialValue
-    #     def remove(self):
-    #         Beta.BetaList.pop(self.name)
-    #         del self
 
     class Dense1(Layer):
 
@@ -136,8 +76,7 @@ class DNN_MNP():
 
             super().__init__(**kwargs)
 
-        # def addWeight(self, name='',shape=(1,), constraint=None):
-        #     return self.add_weight(name=name,shape=shape, constraint=constraint)
+
         def build(self, input_shape):
             class FreezeSlice(Constraint):
 
@@ -180,14 +119,6 @@ class DNN_MNP():
                                                         np.s_[[0]]) if arg.constraint == 1 else None))
                             BetaNames.append(arg.name)
 
-                # self.W1 = self.add_weight(name='Ba',shape=(1,), constraint=FreezeSlice([3.0],np.s_[[0]]))
-                # self.W2 = self.add_weight(name='Bb',shape=(1,))
-
-                # self.W3 = self.add_weight(name='Bp',shape=(1,))
-                # self.W4 = self.add_weight(name='Bq',shape=(1,))
-                # self.W5 = self.add_weight(name='cor',shape=(1,),initializer = tf.keras.initializers.Constant(0.5),
-                #                       trainable=True,constraint=tf.keras.constraints.MinMaxNorm(max_value=0.98))
-            # print(wList)
 
             self.wList = wList
             super().build(input_shape)
@@ -196,16 +127,12 @@ class DNN_MNP():
             errorList = []
             vList = []
             outList = []
-            r, c = inputs.shape
+            # r, c = inputs.shape
 
             for formula in self.formulas:
-                # error = keras.initializers(loc=0, scale=1, size=(self.iternum,))
                 error = np.random.normal(loc = 0, scale = 1 , size = (self.iternum,))
                 # print(type(formula.args))
                 errorList.append(error)
-
-                # Error1= np.random.normal(loc = 0, scale = 1 , size = (self.iternum,))
-                # Error2= np.random.normal(loc = 0, scale = 1 , size = (self.iternum,))
 
             if len(self.formulas) > 3:
                 raise Exception('This model is not able to handel more than three formulas.')
@@ -276,27 +203,19 @@ class DNN_MNP():
 
                 v = tf.expand_dims(weight_input, axis=1)
                 out = tf.expand_dims(tf.matmul(v, tf.ones((1, self.iternum),
-                                                          tf.float32)) + errorList[formulaindex], axis=1)
+                                                    tf.float32)) + errorList[formulaindex], axis=1)
                 vList.append(v)
                 outList.append(out)
 
                 formulaindex += 1
-                # v1 = (self.W1 * inputs[:, 0]) + (self.W2 * inputs[:, 1]) + \
-                #      (self.W3 * inputs[:, 2]) + (self.W4 * inputs[:, 3])
-                # out1 = tf.expand_dims(tf.matmul(v1, tf.ones((1, self.iternum), tf.float32)) + error[:, 0], axis=1)
-                #
-                # v2 = tf.expand_dims((self.W1 * inputs[:, 4]) + (self.W2 * inputs[:, 5]) +
-                #                     (self.W3 * inputs[:, 6]) + (self.W4 * inputs[:, 7]), axis=1)
-                #
-                # out2 = tf.expand_dims(tf.matmul(v2, tf.ones((1, self.iternum), tf.float32)) + error[:, 1], axis=1)
+
 
             self.errorList = errorList
 
             if self.probit:
                 for i in range(len(outList)):
                     outList[i] -= outList[0]
-                    # out1 = out1 - out2
-                    # out2 = out2 - out2
+
             self.outList = outList
             self.vList = vList
             print('errorList', self.errorList)
@@ -309,7 +228,6 @@ class DNN_MNP():
             return x
 
     def creat_model(this, formula, BetaList, probit=False):
-        # Dense1 = this.Dense1(iternum=this.iternum, activation=this.activation)
         Utility1 = Sequential()
         rowNum, columnsNum = Formula.dataFrame.shape
         Utility1.add(tf.keras.layers.InputLayer((columnsNum,), name='inp_1'))
@@ -329,10 +247,10 @@ class DNN_MNP():
 
         main_network = tf.transpose(tf.divide(tf.transpose(mergedOutput), Sum))
 
-        new_model = Model(
-            inputs=[Utility1.input], outputs=[main_network])
+        new_model = Model(inputs=[Utility1.input], outputs=[main_network])
 
         print(new_model.summary())
+        # raise Exception('')
         this.new_model = new_model
         return new_model
 
@@ -383,6 +301,7 @@ class DNN_MNP():
                 for j in range(len(this.parameters)-1):
                     plt.plot(epoch, weights_epochs[j, :], label=betaNames[j])
                 plt.plot(epoch, weights_epochs[-1, :], label="corr")
+                plt.legend()
                 plt.show()
             elif len(Formula.formulaList) == 3:
                 for j in range(len(this.parameters) -3):
@@ -390,10 +309,12 @@ class DNN_MNP():
                 plt.plot(epoch, weights_epochs[-3, :], label="corr1")
                 plt.plot(epoch, weights_epochs[-2, :], label="corr2")
                 plt.plot(epoch, weights_epochs[-1, :], label="corr3")
+                plt.legend()
                 plt.show()
         else:
             for j in range(len(this.parameters)):
                 plt.plot(epoch, weights_epochs[j, :], label=betaNames[j])
+            plt.legend()
             plt.show()
 
 
@@ -516,12 +437,15 @@ class DNN_MNP():
     """End_________________________________________________________________________"""
 
     # stop = timeit.default_timer()
-
+    #
     # print('Time: ', stop - start)
 
 
 if __name__ == '__main__':
-    ddd = DNN_MNP(iternum=200, epochs=300)
+    import timeit
+    start = timeit.default_timer()
+
+    ddd = DNN_MNP(iternum=200, epochs=100)
     Dataset = pd.read_excel('Dataset_MNL.xlsx')
 
     Dataset.drop('Unnamed: 0', inplace=True, axis=1)
@@ -542,6 +466,7 @@ if __name__ == '__main__':
     # for f in Formula.formulaList:
     #     print(f.get_args())
     # print(Formula.dataFrame)
+
     W1 = Beta('w1', 0, 0)
     W2 = Beta('w2', 0, 0)
     W3 = Beta('w3', 0, 0)
@@ -549,56 +474,13 @@ if __name__ == '__main__':
     F1 = Formula((W1, a1), (W2, b1), (W3, p1), (W4, q1))
     F2 = Formula((W1, a2), (W2, b2), (W3, p2), (W4, q2))
 
-    ddd.creat_model(formula=Formula.formulaList, BetaList=Beta.BetaList, probit=False)
+    ddd.creat_model(formula=Formula.formulaList, BetaList=Beta.BetaList, probit=True)
     history, new_model = ddd.fit_model(target)
 
     print(ddd.estimated_parameters())
     ddd.plot_parameters_history()
 
-    # newModel = DNN_MNP()
 
-    # Bp = -1
-    # Ba = 0.5
-    # Bb = 0.5
-    # Bq = 1
+    stop = timeit.default_timer()
 
-    # Dataset = pd.read_excel('Dataset_MNP.xlsx')
-
-    # cor = pd.read_excel('Cor_MNP.xlsx')
-
-    # cor.drop('Unnamed: 0', inplace=True, axis=1)
-
-    # True_val= [Bp,Ba,Bb,Bq,cor.iloc[1,0]]
-
-    # Dataset.drop('Unnamed: 0', inplace=True, axis=1)
-
-    # def dense_to_one_hot(labels_dense, num_classes):
-    #     labels_dense = labels_dense.astype(np.int64)
-    #     num_labels = labels_dense.shape[0]
-    #     index_offset = np.arange(num_labels) * num_classes
-    #     labels_one_hot = np.zeros((num_labels, num_classes))
-    #     labels_one_hot.flat[index_offset + labels_dense.ravel()] = 1
-
-    #     return labels_one_hot
-
-    # classes = dense_to_one_hot(labels_dense=Dataset['choice'], num_classes=2)
-    # matrix1 = np.zeros((4,4))
-    #
-    # Data = Dataset.iloc[:,0:8]
-    #
-    # y_pred = new_model.predict(Dataset.iloc[:, 1:11 ])
-    #
-    #
-    # pred = pd.DataFrame(np.concatenate((y_pred[:,0:1],y_pred[:,0:1],
-    #                                     y_pred[:,1:2],y_pred[:,1:2]), axis= 1))
-    #
-    # for i in range(4):
-    #     for j in range(4):
-    #         matrix1[i,j]= np.sum((Data.iloc[:,i] * Data.iloc[:,j]) * (pred.iloc[:,i]*pred.iloc[:,j]))
-    #
-    #
-    #
-    #
-    # invHess1 = np.linalg.inv(matrix1)
-    #
-    # stds1 = [invHess1[i][i]**0.5 for i in range(invHess1.shape[0])]
+    print('Time: ', stop - start)
