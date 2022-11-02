@@ -7,6 +7,9 @@ Created on Wed Jun 22 10:46:24 2022
 """
 from builtins import isinstance
 
+import keras.initializers
+
+
 """library_____________________________________________________________________"""
 import timeit
 from random import seed
@@ -70,6 +73,7 @@ import tensorflow as tf
 
 class DNN_MNP():
     def __init__(this, batch=100, iternum=200, epochs=200, activation=None):
+        this.probit = False
         this.dataset = None
         this.target = None
         this.new_model = None
@@ -166,14 +170,14 @@ class DNN_MNP():
                     if isinstance(arg, tuple):
                         if arg[0].name not in BetaNames:
                             wList.append(self.add_weight(name=arg[0].name, shape=(1,),
-                                                 constraint=FreezeSlice([arg[0].initial_value],
-                                                np.s_[[0]]) if arg[0].constraint == 1 else None))
+                                                         constraint=FreezeSlice([arg[0].initial_value],
+                                                        np.s_[[0]]) if arg[0].constraint == 1 else None))
                             BetaNames.append(arg[0].name)
                     if isinstance(arg, Beta):
                         if arg.name not in BetaNames:
                             wList.append(self.add_weight(name=arg.name, shape=(1,),
-                                                     constraint=FreezeSlice([arg.initial_value],
-                                                      np.s_[[0]]) if arg.constraint == 1 else None))
+                                                         constraint=FreezeSlice([arg.initial_value],
+                                                        np.s_[[0]]) if arg.constraint == 1 else None))
                             BetaNames.append(arg.name)
 
                 # self.W1 = self.add_weight(name='Ba',shape=(1,), constraint=FreezeSlice([3.0],np.s_[[0]]))
@@ -182,8 +186,9 @@ class DNN_MNP():
                 # self.W3 = self.add_weight(name='Bp',shape=(1,))
                 # self.W4 = self.add_weight(name='Bq',shape=(1,))
                 # self.W5 = self.add_weight(name='cor',shape=(1,),initializer = tf.keras.initializers.Constant(0.5),
-                #                           trainable=True,constraint=tf.keras.constraints.MinMaxNorm(max_value=0.98))
+                #                       trainable=True,constraint=tf.keras.constraints.MinMaxNorm(max_value=0.98))
             # print(wList)
+
             self.wList = wList
             super().build(input_shape)
 
@@ -194,7 +199,8 @@ class DNN_MNP():
             r, c = inputs.shape
 
             for formula in self.formulas:
-                error = np.random.normal(loc=0, scale=1, size=(self.iternum,))
+                # error = keras.initializers(loc=0, scale=1, size=(self.iternum,))
+                error = np.random.normal(loc = 0, scale = 1 , size = (self.iternum,))
                 # print(type(formula.args))
                 errorList.append(error)
 
@@ -203,21 +209,22 @@ class DNN_MNP():
 
             if len(self.formulas) > 3:
                 raise Exception('This model is not able to handel more than three formulas.')
-            print(self.wList)
+            # print(self.wList)
 
             if self.probit:
                 inp = tf.cast(tf.transpose(tf.stack(tuple(errorList))), tf.float32)
                 if len(self.formulas) == 2:
-                    self.wList.append(self.add_weight(name='cor',shape=(1,),initializer = tf.keras.initializers.Constant(0.5),
-                                          trainable=True,constraint=tf.keras.constraints.MinMaxNorm(max_value=0.98)))
+                    self.wList.append(
+                        self.add_weight(name='cor', shape=(1,), initializer=tf.keras.initializers.Constant(0.5),
+                                        trainable=True, constraint=tf.keras.constraints.MinMaxNorm(max_value=0.98)))
 
                     # print(self.wList)
                     o = tf.constant([0.0])
                     p = tf.constant([1.0])
 
-                    row1 = tf.reshape(tf.stack([p, o]), (2, ))
+                    row1 = tf.reshape(tf.stack([p, o]), (2,))
 
-                    row2 = tf.reshape(tf.stack([self.wList[-1], tf.sqrt(p-tf.square(self.wList[-1]))]), (2, ))
+                    row2 = tf.reshape(tf.stack([self.wList[-1], tf.sqrt(p - tf.square(self.wList[-1]))]), (2,))
 
                     L = tf.stack([row1, row2])
 
@@ -237,12 +244,11 @@ class DNN_MNP():
                         self.add_weight(name='cor2', shape=(1,), initializer=tf.keras.initializers.Constant(0.5),
                                         trainable=True, constraint=tf.keras.constraints.MinMaxNorm(max_value=0.98)))
 
-                    print(self.wList)
+                    # print(self.wList)
                     o = tf.constant([0.0])
                     p = tf.constant([1.0])
 
                     row1 = tf.reshape(tf.stack([p, o, o]), (3,))
-
                     row2 = tf.reshape(tf.stack([self.wList[-3], tf.sqrt(p - tf.square(self.wList[-3])), o]), (3,))
                     row3 = tf.reshape(tf.stack([self.wList[-2], self.wList[-1],
                                                 tf.sqrt(p - tf.square(self.wList[-2]) -
@@ -268,11 +274,11 @@ class DNN_MNP():
                         weight_input += (self.wList[betaindex])
                         betaindex += 1
 
-                    v = tf.expand_dims(weight_input, axis=1)
-                    out = tf.expand_dims(tf.matmul(v, tf.ones((1, self.iternum),
-                                                              tf.float32)) + errorList[formulaindex], axis=1)
-                    vList.append(v)
-                    outList.append(out)
+                v = tf.expand_dims(weight_input, axis=1)
+                out = tf.expand_dims(tf.matmul(v, tf.ones((1, self.iternum),
+                                                          tf.float32)) + errorList[formulaindex], axis=1)
+                vList.append(v)
+                outList.append(out)
 
                 formulaindex += 1
                 # v1 = (self.W1 * inputs[:, 0]) + (self.W2 * inputs[:, 1]) + \
@@ -283,19 +289,21 @@ class DNN_MNP():
                 #                     (self.W3 * inputs[:, 6]) + (self.W4 * inputs[:, 7]), axis=1)
                 #
                 # out2 = tf.expand_dims(tf.matmul(v2, tf.ones((1, self.iternum), tf.float32)) + error[:, 1], axis=1)
-                # out1 = out1 - out2
-                # out2 = out2 - out2
 
             self.errorList = errorList
+
+            if self.probit:
+                for i in range(len(outList)):
+                    outList[i] -= outList[0]
+                    # out1 = out1 - out2
+                    # out2 = out2 - out2
             self.outList = outList
             self.vList = vList
-            # print('errorList', self.errorList)
-            # print('self.outList', self.outList)
-            # print('self.vList', self.vList)
+            print('errorList', self.errorList)
+            print('self.outList', self.outList)
+            print('self.vList', self.vList)
 
-            Scores = tf.experimental.numpy.hstack(tuple(outList))
-
-            return Scores
+            return tf.experimental.numpy.hstack(tuple(outList))
 
         def F(x):
             return x
@@ -303,10 +311,11 @@ class DNN_MNP():
     def creat_model(this, formula, BetaList, probit=False):
         # Dense1 = this.Dense1(iternum=this.iternum, activation=this.activation)
         Utility1 = Sequential()
+        rowNum, columnsNum = Formula.dataFrame.shape
+        Utility1.add(tf.keras.layers.InputLayer((columnsNum,), name='inp_1'))
+        Utility1.add(this.Dense1(formula=formula, probit=probit, BetaList=BetaList, iternum=this.iternum))
 
-        Utility1.add(tf.keras.layers.InputLayer((8,), name='inp_1'))
-        Utility1.add(this.Dense1(formula=formula, probit=probit,  BetaList=BetaList, iternum=this.iternum))
-
+        this.probit = probit
         mergedOutput1 = Utility1.output
 
         mergedOutput = tf.transpose(mergedOutput1, perm=[0, 2, 1])
@@ -338,19 +347,19 @@ class DNN_MNP():
             on_epoch_end=lambda epoch, logs: weights_dict.update({epoch: this.new_model.get_weights()}))
 
         callback = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=20, mode='min')
-
+        print(this.dataset.shape , target.shape)
         history = this.new_model.fit(this.dataset, target, epochs=this.epochs, batch_size=this.batch, shuffle=True,
                                      callbacks=[cbk])
         this.weights_dict = weights_dict
         this.history = history
-        return this.new_model
+        return (this.history, this.new_model)
 
     """Extracting Weights__________________________________________________________"""
 
-    def Estimated_parameters(this):
+    def estimated_parameters(this):
         weight = [layer.get_weights() for layer in this.new_model.layers]
 
-        a = [weight[1][0], weight[1][1], weight[1][2], weight[1][3], weight[1][4]]
+        a = weight[1]
 
         this.parameters = np.array(a)
         return this.parameters
@@ -358,22 +367,35 @@ class DNN_MNP():
     """Extracting Weights__________________________________________________________"""
 
     def plot_parameters_history(this):
-        weights_epochs = np.zeros((5, this.epochs))
+        this.estimated_parameters()
 
-        for i in range(this.epochs):
-            weights_epochs[0, i] = this.weights_dict[i][0]
-            weights_epochs[1, i] = this.weights_dict[i][1]
-            weights_epochs[2, i] = this.weights_dict[i][2]
-            weights_epochs[3, i] = this.weights_dict[i][3]
-            weights_epochs[4, i] = this.weights_dict[i][4]
+        weights_epochs = np.zeros((len(this.parameters), this.epochs))
+        for j in range(len(this.parameters)):
+            for i in range(this.epochs):
+                weights_epochs[j, i] = this.weights_dict[i][j]
 
-            # ploting parameters history
-            epoch = np.arange(1, this.epochs + 1, 1)
-            plt.plot(epoch, weights_epochs[0, :], label="Ba")
-            plt.plot(epoch, weights_epochs[1, :], label="Bb")
-            plt.plot(epoch, weights_epochs[2, :], label="Bp")
-            plt.plot(epoch, weights_epochs[3, :], label="Bq")
-            plt.plot(epoch, weights_epochs[4, :], label="correlation")
+
+        # ploting parameters history
+        epoch = np.arange(1, this.epochs + 1, 1)
+        betaNames = Beta.BetaName
+        if this.probit:
+            if len(Formula.formulaList) == 2:
+                for j in range(len(this.parameters)-1):
+                    plt.plot(epoch, weights_epochs[j, :], label=betaNames[j])
+                plt.plot(epoch, weights_epochs[-1, :], label="corr")
+                plt.show()
+            elif len(Formula.formulaList) == 3:
+                for j in range(len(this.parameters) -3):
+                    plt.plot(epoch, weights_epochs[j, :], label=betaNames[j])
+                plt.plot(epoch, weights_epochs[-3, :], label="corr1")
+                plt.plot(epoch, weights_epochs[-2, :], label="corr2")
+                plt.plot(epoch, weights_epochs[-1, :], label="corr3")
+                plt.show()
+        else:
+            for j in range(len(this.parameters)):
+                plt.plot(epoch, weights_epochs[j, :], label=betaNames[j])
+            plt.show()
+
 
     # plt.legend(loc="upper right")
     # plt.title('weights')
@@ -499,29 +521,39 @@ class DNN_MNP():
 
 
 if __name__ == '__main__':
-    ddd = DNN_MNP()
-    Dataset = pd.read_excel('Dataset_MNP.xlsx')
+    ddd = DNN_MNP(iternum=200, epochs=300)
+    Dataset = pd.read_excel('Dataset_MNL.xlsx')
 
     Dataset.drop('Unnamed: 0', inplace=True, axis=1)
     target = ddd.dense_to_one_hot(Dataset['choice'], 2)
     ddd.attach(Dataset)
+
     # print(Dataset.columns)
 
-    ASC_TRAIN = Beta('ASC', 0, 0)
-    ASC_SM = Beta('ASCc', 0, 0)
-    ASC = Beta('newASC', 4, 1)
-    # print(type(ASC_SM))
-    f1 = Formula((ASC_TRAIN, a1), (ASC_SM, b1))
-    f2 = Formula((ASC_TRAIN, b1))
-    f3 = Formula((ASC))
+    # ASC_TRAIN = Beta('ASC', 0, 0)
+    # ASC_SM = Beta('ASCc', 0, 0)
+    # ASC = Beta('newASC', 4, 1)
+    # # print(type(ASC_SM))
+    # f1 = Formula((ASC_TRAIN, a1), (ASC_SM, b1))
+    # f2 = Formula((ASC_TRAIN, b1))
+    # f3 = Formula((ASC))
     # print(Formula.formulaList[0].get_args())
     # print(Formula.formulaList)
     # for f in Formula.formulaList:
     #     print(f.get_args())
     # print(Formula.dataFrame)
+    W1 = Beta('w1', 0, 0)
+    W2 = Beta('w2', 0, 0)
+    W3 = Beta('w3', 0, 0)
+    W4 = Beta('w4', 0, 0)
+    F1 = Formula((W1, a1), (W2, b1), (W3, p1), (W4, q1))
+    F2 = Formula((W1, a2), (W2, b2), (W3, p2), (W4, q2))
 
-    ddd.creat_model(formula=Formula.formulaList, BetaList=Beta.BetaList, probit=True)
-    # ddd.fit_model(target)
+    ddd.creat_model(formula=Formula.formulaList, BetaList=Beta.BetaList, probit=False)
+    history, new_model = ddd.fit_model(target)
+
+    print(ddd.estimated_parameters())
+    ddd.plot_parameters_history()
 
     # newModel = DNN_MNP()
 

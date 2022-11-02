@@ -13,7 +13,7 @@ class Beta:
             Beta.BetaName.append(name)
         else:
             self.error = True
-            raise Exception('The Beta name is taken before. Please s elect unique name for your Beta.')
+            raise Exception('The Beta name is taken before. Please select unique name for your Beta.')
             self.__del__()
         self.name = name
         self.initial_value = initial_value
