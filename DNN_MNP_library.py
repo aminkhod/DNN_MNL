@@ -159,7 +159,7 @@ class DNN_MNP():
 
                     L = tf.stack([row1, row2])
                     print(L)
-                    error = self.activation(tf.matmul(inp, L))
+                    error = self.activation(tf.matmul(inp[:, :-1], L))
                     print(error)
                     errorList[0] = error[:, 0]
                     errorList[1] = error[:, 1]
@@ -216,6 +216,10 @@ class DNN_MNP():
                     if formulaindex + 1 <= len(errorList):
                         out = tf.expand_dims(tf.matmul(v, tf.ones((1, self.iternum),
                                                               tf.float32)) + errorList[formulaindex], axis=1)
+                    else:
+                        out = tf.expand_dims(tf.matmul(v, tf.ones((1, self.iternum),
+                                                                  tf.float32)), axis=1)
+
                 else:
                     out = tf.expand_dims(tf.matmul(v, tf.ones((1, self.iternum),
                                                 tf.float32)) + errorList[formulaindex], axis=1)
@@ -462,7 +466,7 @@ if __name__ == '__main__':
     Dataset = pd.read_excel('Dataset_MNP2.xlsx')
 
     Dataset.drop('Unnamed: 0', inplace=True, axis=1)
-    target = ddd.dense_to_one_hot(Dataset['choice'], 2)
+    target = ddd.dense_to_one_hot(Dataset['choice'], 3)
     ddd.attach(Dataset)
 
     # print(Dataset.columns)
@@ -486,6 +490,9 @@ if __name__ == '__main__':
     W4 = Beta('w4', 0, 0)
     F1 = Formula((W1, a1), (W2, b1), (W3, p1), (W4, q1))
     F2 = Formula((W1, a2), (W2, b2), (W3, p2), (W4, q2))
+    F2 = Formula((W1, a3), (W2, b3), (W3, p3), (W4, q3))
+
+
 
     ddd.creat_model(formula=Formula.formulaList, BetaList=Beta.BetaList, probit=True)
 
