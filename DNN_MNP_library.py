@@ -108,15 +108,17 @@ class DNN_MNP():
                 for arg in formula.args:
                     if isinstance(arg, tuple):
                         if arg[0].name not in BetaNames:
-                            wList.append(self.add_weight(name=arg[0].name, shape=(1,),
-                                                         constraint=FreezeSlice([arg[0].initial_value],
-                                                        np.s_[[0]]) if arg[0].constraint == 1 else None))
+                            wList.append(self.add_weight(name=arg[0].name, shape=(1,)))
+                            # ,
+                            # constraint = FreezeSlice([arg[0].initial_value],
+                            #                          np.s_[[0]]) if arg[0].constraint == 1 else None
                             BetaNames.append(arg[0].name)
                     if isinstance(arg, Beta):
                         if arg.name not in BetaNames:
-                            wList.append(self.add_weight(name=arg.name, shape=(1,),
-                                                         constraint=FreezeSlice([arg.initial_value],
-                                                        np.s_[[0]]) if arg.constraint == 1 else None))
+                            wList.append(self.add_weight(name=arg.name, shape=(1,)))
+                            # ,
+                            # constraint = FreezeSlice([arg.initial_value],
+                            #                          np.s_[[0]]) if arg.constraint == 1 else None
                             BetaNames.append(arg.name)
 
 
@@ -131,16 +133,18 @@ class DNN_MNP():
 
             for formula in self.formulas:
                 error = np.random.normal(loc = 0, scale = 1 , size = (self.iternum,))
+                error = tf.convert_to_tensor(error, dtype='float32', dtype_hint=None, name=None)
                 # print(type(formula.args))
                 errorList.append(error)
 
-            if len(self.formulas) > 3:
-                raise Exception('This model is not able to handel more than three formulas.')
+
             # print(self.wList)
 
             if self.probit:
+                if len(self.formulas) > 4:
+                    raise Exception('This model is not able to handel more than four formulas.')
                 inp = tf.cast(tf.transpose(tf.stack(tuple(errorList))), tf.float32)
-                if len(self.formulas) == 2:
+                if len(self.formulas) == 3:
                     self.wList.append(
                         self.add_weight(name='cor', shape=(1,), initializer=tf.keras.initializers.Constant(0.5),
                                         trainable=True, constraint=tf.keras.constraints.MinMaxNorm(max_value=0.98)))
@@ -154,11 +158,12 @@ class DNN_MNP():
                     row2 = tf.reshape(tf.stack([self.wList[-1], tf.sqrt(p - tf.square(self.wList[-1]))]), (2,))
 
                     L = tf.stack([row1, row2])
-
+                    print(L)
                     error = self.activation(tf.matmul(inp, L))
+                    print(error)
                     errorList[0] = error[:, 0]
                     errorList[1] = error[:, 1]
-                if len(self.formulas) == 3:
+                elif len(self.formulas) == 4:
                     inp = tf.cast(tf.transpose(tf.stack(tuple(errorList))), tf.float32)
 
                     self.wList.append(
@@ -189,12 +194,16 @@ class DNN_MNP():
                     errorList[2] = error[:, 2]
 
             formulaindex = 0
+            inputindex = 0
             for formula in self.formulas:
+                # print(formula)
                 weight_input = 0
-                betaindex, inputindex = 0, 0  # index for Betas and inputs
+                betaindex = 0  # index for Betas and inputs
                 for arg in formula.args:
+                    print(betaindex, inputindex)
                     if isinstance(arg, tuple):
-                        weight_input += (self.wList[betaindex] * inputs[:, inputindex])
+                        weight_input += tf.math.multiply(self.wList[betaindex], inputs[:, inputindex])
+                        # print(weight_input)
                         inputindex += 1
                         betaindex += 1
                     elif isinstance(arg, Beta):
@@ -202,25 +211,29 @@ class DNN_MNP():
                         betaindex += 1
 
                 v = tf.expand_dims(weight_input, axis=1)
-                out = tf.expand_dims(tf.matmul(v, tf.ones((1, self.iternum),
-                                                    tf.float32)) + errorList[formulaindex], axis=1)
+                # print('var', v)
+                if self.probit:
+                    if formulaindex + 1 <= len(errorList):
+                        out = tf.expand_dims(tf.matmul(v, tf.ones((1, self.iternum),
+                                                              tf.float32)) + errorList[formulaindex], axis=1)
+                else:
+                    out = tf.expand_dims(tf.matmul(v, tf.ones((1, self.iternum),
+                                                tf.float32)) + errorList[formulaindex], axis=1)
                 vList.append(v)
                 outList.append(out)
 
                 formulaindex += 1
 
-
             self.errorList = errorList
 
             if self.probit:
                 for i in range(len(outList)):
-                    outList[i] -= outList[0]
-
+                    outList[i] -= outList[-1]
             self.outList = outList
             self.vList = vList
-            print('errorList', self.errorList)
-            print('self.outList', self.outList)
-            print('self.vList', self.vList)
+            # print('errorList', self.errorList)
+            # print('self.outList', self.outList)
+            # print('self.vList', self.vList)
 
             return tf.experimental.numpy.hstack(tuple(outList))
 
@@ -257,7 +270,7 @@ class DNN_MNP():
     def fit_model(this, target):
         this.dataset = Formula.dataFrame
         this.target = target
-        this.new_model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['categorical_accuracy'])
+        this.new_model.compile(optimizer='Adam', loss='categorical_crossentropy', metrics=['categorical_accuracy'])
 
         weights_dict = {}
 
@@ -265,7 +278,7 @@ class DNN_MNP():
             on_epoch_end=lambda epoch, logs: weights_dict.update({epoch: this.new_model.get_weights()}))
 
         callback = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=20, mode='min')
-        print(this.dataset.shape , target.shape)
+        # print(this.dataset.shape , target.shape)
         history = this.new_model.fit(this.dataset, target, epochs=this.epochs, batch_size=this.batch, shuffle=True,
                                      callbacks=[cbk])
         this.weights_dict = weights_dict
@@ -445,8 +458,8 @@ if __name__ == '__main__':
     import timeit
     start = timeit.default_timer()
 
-    ddd = DNN_MNP(iternum=200, epochs=100)
-    Dataset = pd.read_excel('Dataset_MNL.xlsx')
+    ddd = DNN_MNP(iternum=400, epochs=200)
+    Dataset = pd.read_excel('Dataset_MNP2.xlsx')
 
     Dataset.drop('Unnamed: 0', inplace=True, axis=1)
     target = ddd.dense_to_one_hot(Dataset['choice'], 2)
@@ -475,12 +488,12 @@ if __name__ == '__main__':
     F2 = Formula((W1, a2), (W2, b2), (W3, p2), (W4, q2))
 
     ddd.creat_model(formula=Formula.formulaList, BetaList=Beta.BetaList, probit=True)
+
     history, new_model = ddd.fit_model(target)
 
     print(ddd.estimated_parameters())
+    stop = timeit.default_timer()
+    print('Time: ', stop - start)
+
     ddd.plot_parameters_history()
 
-
-    stop = timeit.default_timer()
-
-    print('Time: ', stop - start)

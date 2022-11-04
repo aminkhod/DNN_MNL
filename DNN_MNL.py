@@ -164,7 +164,7 @@ cbk = tf.keras.callbacks.LambdaCallback( on_epoch_end=lambda epoch, logs: weight
 callback = tf.keras.callbacks.EarlyStopping( monitor='loss',patience=20,mode='min')
 
 
-epochs=1000
+epochs=100
 
 history=new_model.fit( Dataset.iloc[:, 0:8 ],classes, epochs=epochs ,batch_size=batch,shuffle=True,callbacks=[cbk])
 
