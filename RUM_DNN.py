@@ -37,9 +37,11 @@ from numpy.random import *
 def attach(df):
     for col in df.columns:
         globals()[col] = df[col]
+
+
 class RUM_DNN():
     def __init__(this, batch=100, iternum=200, epochs=200, activation=None):
-        this.probit = False
+        this.correlation = False
         this.dataset = None
         this.target = None
         this.new_model = None
@@ -49,20 +51,12 @@ class RUM_DNN():
         this.epochs = epochs
         this.activation = activation
 
-    def dense_to_one_hot(this, labels_dense, num_classes):
-        labels_dense = labels_dense.astype(np.int64)
-        num_labels = labels_dense.shape[0]
-        index_offset = np.arange(num_labels) * num_classes
-        labels_one_hot = np.zeros((num_labels, num_classes))
-        labels_one_hot.flat[index_offset + labels_dense.ravel()] = 1
-
-        return labels_one_hot
-
-
+    def dense_to_one_hot(this, labels_dense):
+        return tf.keras.utils.to_categorical(labels_dense)
 
     class Dense1(Layer):
 
-        def __init__(self, iternum, formula, BetaList, probit=False,
+        def __init__(self, iternum, formula, BetaList, correlation=False,
                      dist=None, activation=None, **kwargs):
             self.wList = None
             self.vList = None
@@ -70,7 +64,7 @@ class RUM_DNN():
             self.outList = None
             self.formulas = formula
             self.BetaList = BetaList
-            self.probit = probit
+            self.correlation = correlation
             self.activation = activations.get(activation)
             self.iternum = iternum
             if dist is None:
@@ -115,7 +109,7 @@ class RUM_DNN():
                     if isinstance(arg, tuple):
                         if arg[0].name not in BetaNames:
                             wList.append(self.add_weight(name=arg[0].name, shape=(1,)))
-                            print(arg[0].name)
+                            # print(arg[0].name)
                             # ,
                             # constraint = FreezeSlice([arg[0].initial_value],
                             #                          np.s_[[0]]) if arg[0].constraint == 1 else None
@@ -148,7 +142,7 @@ class RUM_DNN():
 
             # print(self.wList)
 
-            if self.probit:
+            if self.correlation:
                 if len(self.formulas) > 4:
                     raise Exception('This model is not able to handel more than four formulas.')
                 inp = tf.cast(tf.transpose(tf.stack(tuple(errorList))), tf.float32)
@@ -166,9 +160,9 @@ class RUM_DNN():
                     row2 = tf.reshape(tf.stack([self.wList[-1], tf.sqrt(p - tf.square(self.wList[-1]))]), (2,))
 
                     L = tf.stack([row1, row2])
-                    print(L)
+                    # print(L)
                     error = self.activation(tf.matmul(inp[:, :-1], L))
-                    print(error)
+                    # print(error)
                     errorList[0] = error[:, 0]
                     errorList[1] = error[:, 1]
                 elif len(self.formulas) == 4:
@@ -220,7 +214,7 @@ class RUM_DNN():
 
                 v = tf.expand_dims(weight_input, axis=1)
                 # print('var', v)
-                if self.probit:
+                if self.correlation:
                     if formulaindex + 1 <= len(errorList):
                         out = tf.expand_dims(tf.matmul(v, tf.ones((1, self.iternum),
                                                                   tf.float32)) + errorList[formulaindex], axis=1)
@@ -238,7 +232,7 @@ class RUM_DNN():
 
             self.errorList = errorList
 
-            if self.probit:
+            if self.correlation:
                 for i in range(len(outList)):
                     outList[i] -= outList[-1]
             self.outList = outList
@@ -252,15 +246,19 @@ class RUM_DNN():
         def F(x):
             return x
 
-    def creat_model(this, errorDist=None, probit=False):
+    def creat_model(this,formulaDict, errorDist=None, correlation=False):
+        # Updating list of formulas which are used in model
+        Formula.formulaList = [x[1] for x in sorted(formulaDict.items(), key=lambda x: x[0])]
+        # Creating a local database based on formula variables.
+        Formula.createFormulaDataset()
 
         Utility1 = Sequential()
         rowNum, columnsNum = Formula.dataFrame.shape
         Utility1.add(tf.keras.layers.InputLayer((columnsNum,), name='inp_1'))
-        Utility1.add(this.Dense1(formula=Formula.formulaList, BetaList=Beta.BetaList, probit=probit,
+        Utility1.add(this.Dense1(formula=Formula.formulaList, BetaList=Beta.BetaList, correlation=correlation,
                                  iternum=this.iternum, dist=errorDist))
 
-        this.probit = probit
+        this.correlation = correlation
         mergedOutput1 = Utility1.output
 
         mergedOutput = tf.transpose(mergedOutput1, perm=[0, 2, 1])
@@ -322,7 +320,7 @@ class RUM_DNN():
         # ploting parameters history
         epoch = np.arange(1, this.epochs + 1, 1)
         betaNames = Beta.BetaName
-        if this.probit:
+        if this.correlation:
             if len(Formula.formulaList) == 2:
                 for j in range(len(this.parameters) - 1):
                     plt.plot(epoch, weights_epochs[j, :], label=betaNames[j])
@@ -476,7 +474,8 @@ if __name__ == '__main__':
     Dataset = pd.read_excel('Dataset_MNP2.xlsx')
 
     Dataset.drop('Unnamed: 0', inplace=True, axis=1)
-    target = ddd.dense_to_one_hot(Dataset['choice'], 3)
+    target = ddd.dense_to_one_hot(Dataset['choice'])
+    # print(target)
     attach(Dataset)
 
     # print(Dataset.columns)
@@ -517,16 +516,24 @@ if __name__ == '__main__':
 
     # for B in Beta.BetaList:
     #     print(B.name, B.initial_value, B.constraint)
+    F1 = Formula((W1, a2), (W2, b2), (W3, p2), (W4, q2))
+    F2 = Formula((W1, a1), (W2, b1), (W3, p1), (W4, q1))
+
     F1 = Formula((W1, a1), (W2, b1), (W3, p1), (W4, q1))
-    F2 = Formula((W1, a2), (W2, b2), (W3, p2), (W4, q2))
-    F2 = Formula((W1, a3), (W2, b3), (W3, p3), (W4, q3))
+    F3 = Formula((W1, a3), (W2, b3), (W3, p3), (W4, q3))
+    v = {'1': F1, '0': F2, '2': F3}
+    # print(v)
+    # print(sorted(v.items(), key=lambda x: x[0]))
+    # vsor = [x[1] for x in sorted(v.items(), key=lambda x: x[0])]
+    # for el in vsor:
+    #     print(el)
+    # print(list(v.values()))
+    ddd.creat_model(formulaDict=v, errorDist=normal(0, 1, 400), correlation=True)
 
-    ddd.creat_model(errorDist=normal(0, 1, 400), probit=True)
+    history, new_model = ddd.fit_model(target)
 
-    # history, new_model = ddd.fit_model(target)
-    #
-    # print(ddd.estimated_parameters())
-    # stop = timeit.default_timer()
-    # print('Time: ', stop - start)
-    #
-    # ddd.plot_parameters_history()
+    print(ddd.estimated_parameters())
+    stop = timeit.default_timer()
+    print('Time: ', stop - start)
+
+    ddd.plot_parameters_history()

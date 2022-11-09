@@ -1,23 +1,31 @@
 from Beta import Beta
 import pandas as pd
 
+
 class Formula:
     formulaList = []
-    dataFrame = pd.DataFrame()
+    formulaPair = []
+    # dataFrame = pd.DataFrame()
+
+    nameList = []
     def __init__(self, *args):
-
-        # self.error = False
+        # self.name = name
         self.args = args
-        # if name not in Formula.FormulaList:
-        Formula.formulaList.append(self)
+        # if name not in Formula.nameList:
+        Formula.formulaPair.append(self)
+            # Formula.nameList.append(self.name)
+        # else:
+        #     Formula.formulaPair[Formula.nameList.index(name)][1].args = args
 
-        z = list(Formula.dataFrame.columns)
-        for arg in self.args:
-            # print(type(arg))
-            if not isinstance(arg, Beta):
-                z.append(arg[1].name)
-                Formula.dataFrame = pd.concat([Formula.dataFrame, arg[1]], axis=1)
-                Formula.dataFrame.columns = z
+
+        # for f in Formula.formulaPair:
+        #     print(f[0], f[1].args)
+        # for f in Formula.nameList:
+        #     print(f)
+
+        # Formula.formulaList.sort()
+        # for f in Formula.formulaList:
+        # print(f.className)
 
         # else:
         #     self.error = True
@@ -26,6 +34,19 @@ class Formula:
         # self.name = name
         # self.initialValue = initial_value
         # self.constraint = constraint
+
+
+
+    def createFormulaDataset():
+        ## Creating a local database based on formula variables.
+        z = list(Formula.dataFrame.columns)
+        for form in Formula.formulaList:
+            for arg in form.args:
+                # print(type(arg))
+                if not isinstance(arg, Beta):
+                    z.append(arg[1].name)
+                    Formula.dataFrame = pd.concat([Formula.dataFrame, arg[1]], axis=1)
+                    Formula.dataFrame.columns = z
 
     def get_args(self):
         text = ''
@@ -46,4 +67,3 @@ class Formula:
         text = text[:-3]
 
         return text
-
