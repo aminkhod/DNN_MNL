@@ -6,10 +6,9 @@ Created on Wed Jun 22 10:46:24 2022
 @author: Niousha
 """
 
-
-
 """library_____________________________________________________________________"""
 from random import seed
+
 seed(1)
 
 from builtins import isinstance
@@ -29,11 +28,16 @@ from keras.layers import Layer
 from keras.models import Model
 from tensorflow.keras.models import Sequential
 import tensorflow as tf
+
 tf.compat.v1.disable_eager_execution()
 import tensorflow.compat.v1.keras.backend as K
+from numpy.random import *
 
 
-class DNN_MNP():
+def attach(df):
+    for col in df.columns:
+        globals()[col] = df[col]
+class RUM_DNN():
     def __init__(this, batch=100, iternum=200, epochs=200, activation=None):
         this.probit = False
         this.dataset = None
@@ -54,16 +58,12 @@ class DNN_MNP():
 
         return labels_one_hot
 
-    def attach(self, df):
-        self.dataset = df
-        for col in self.dataset.columns:
-            globals()[col] = self.dataset[col]
 
 
     class Dense1(Layer):
 
         def __init__(self, iternum, formula, BetaList, probit=False,
-                     activation=None, **kwargs):
+                     dist=None, activation=None, **kwargs):
             self.wList = None
             self.vList = None
             self.errorList = None
@@ -73,9 +73,15 @@ class DNN_MNP():
             self.probit = probit
             self.activation = activations.get(activation)
             self.iternum = iternum
+            if dist is None:
+                normal(0, 1, self.iternum)
+            elif len(list(dist)) == self.iternum:
+                self.dist = dist
+            else:
+                raise Exception('The entered error initial list must be list of float numbers'
+                                ' with length that equal to "iternum" parameter.')
 
             super().__init__(**kwargs)
-
 
         def build(self, input_shape):
             class FreezeSlice(Constraint):
@@ -109,6 +115,7 @@ class DNN_MNP():
                     if isinstance(arg, tuple):
                         if arg[0].name not in BetaNames:
                             wList.append(self.add_weight(name=arg[0].name, shape=(1,)))
+                            print(arg[0].name)
                             # ,
                             # constraint = FreezeSlice([arg[0].initial_value],
                             #                          np.s_[[0]]) if arg[0].constraint == 1 else None
@@ -121,7 +128,6 @@ class DNN_MNP():
                             #                          np.s_[[0]]) if arg.constraint == 1 else None
                             BetaNames.append(arg.name)
 
-
             self.wList = wList
             super().build(input_shape)
 
@@ -129,14 +135,16 @@ class DNN_MNP():
             errorList = []
             vList = []
             outList = []
-            # r, c = inputs.shape
 
             for formula in self.formulas:
-                error = np.random.normal(loc = 0, scale = 1 , size = (self.iternum,))
-                error = tf.convert_to_tensor(error, dtype='float32', dtype_hint=None, name=None)
+                # if len(list(self.dist)) == self.iternum:
+                #     error = self.dist
+                # else:
+                #     error = [self.dist for i in range(self.iternum)]
+                # print(len(list([self.dist])), self.dist)
+                error = tf.convert_to_tensor(self.dist, dtype='float32', dtype_hint=None, name=None)
                 # print(type(formula.args))
                 errorList.append(error)
-
 
             # print(self.wList)
 
@@ -184,7 +192,7 @@ class DNN_MNP():
                     row2 = tf.reshape(tf.stack([self.wList[-3], tf.sqrt(p - tf.square(self.wList[-3])), o]), (3,))
                     row3 = tf.reshape(tf.stack([self.wList[-2], self.wList[-1],
                                                 tf.sqrt(p - tf.square(self.wList[-2]) -
-                                                tf.square(self.wList[-1]))]), (3,))
+                                                        tf.square(self.wList[-1]))]), (3,))
 
                     L = tf.stack([row1, row2, row3])
 
@@ -215,14 +223,14 @@ class DNN_MNP():
                 if self.probit:
                     if formulaindex + 1 <= len(errorList):
                         out = tf.expand_dims(tf.matmul(v, tf.ones((1, self.iternum),
-                                                              tf.float32)) + errorList[formulaindex], axis=1)
+                                                                  tf.float32)) + errorList[formulaindex], axis=1)
                     else:
                         out = tf.expand_dims(tf.matmul(v, tf.ones((1, self.iternum),
                                                                   tf.float32)), axis=1)
 
                 else:
                     out = tf.expand_dims(tf.matmul(v, tf.ones((1, self.iternum),
-                                                tf.float32)) + errorList[formulaindex], axis=1)
+                                                              tf.float32)) + errorList[formulaindex], axis=1)
                 vList.append(v)
                 outList.append(out)
 
@@ -244,11 +252,13 @@ class DNN_MNP():
         def F(x):
             return x
 
-    def creat_model(this, formula, BetaList, probit=False):
+    def creat_model(this, errorDist=None, probit=False):
+
         Utility1 = Sequential()
         rowNum, columnsNum = Formula.dataFrame.shape
         Utility1.add(tf.keras.layers.InputLayer((columnsNum,), name='inp_1'))
-        Utility1.add(this.Dense1(formula=formula, probit=probit, BetaList=BetaList, iternum=this.iternum))
+        Utility1.add(this.Dense1(formula=Formula.formulaList, BetaList=Beta.BetaList, probit=probit,
+                                 iternum=this.iternum, dist=errorDist))
 
         this.probit = probit
         mergedOutput1 = Utility1.output
@@ -309,19 +319,18 @@ class DNN_MNP():
             for i in range(this.epochs):
                 weights_epochs[j, i] = this.weights_dict[i][j]
 
-
         # ploting parameters history
         epoch = np.arange(1, this.epochs + 1, 1)
         betaNames = Beta.BetaName
         if this.probit:
             if len(Formula.formulaList) == 2:
-                for j in range(len(this.parameters)-1):
+                for j in range(len(this.parameters) - 1):
                     plt.plot(epoch, weights_epochs[j, :], label=betaNames[j])
                 plt.plot(epoch, weights_epochs[-1, :], label="corr")
                 plt.legend()
                 plt.show()
             elif len(Formula.formulaList) == 3:
-                for j in range(len(this.parameters) -3):
+                for j in range(len(this.parameters) - 3):
                     plt.plot(epoch, weights_epochs[j, :], label=betaNames[j])
                 plt.plot(epoch, weights_epochs[-3, :], label="corr1")
                 plt.plot(epoch, weights_epochs[-2, :], label="corr2")
@@ -333,7 +342,6 @@ class DNN_MNP():
                 plt.plot(epoch, weights_epochs[j, :], label=betaNames[j])
             plt.legend()
             plt.show()
-
 
     # plt.legend(loc="upper right")
     # plt.title('weights')
@@ -459,15 +467,17 @@ class DNN_MNP():
 
 
 if __name__ == '__main__':
+    # from RUM_DNN import *
     import timeit
+
     start = timeit.default_timer()
 
-    ddd = DNN_MNP(iternum=400, epochs=200)
+    ddd = RUM_DNN(iternum=400, epochs=200)
     Dataset = pd.read_excel('Dataset_MNP2.xlsx')
 
     Dataset.drop('Unnamed: 0', inplace=True, axis=1)
     target = ddd.dense_to_one_hot(Dataset['choice'], 3)
-    ddd.attach(Dataset)
+    attach(Dataset)
 
     # print(Dataset.columns)
 
@@ -485,22 +495,38 @@ if __name__ == '__main__':
     # print(Formula.dataFrame)
 
     W1 = Beta('w1', 0, 0)
+    # print('from creator', id(W1))
+
+    W1 = Beta('w1', 2, 0)
+    # print('from creator', id(W1))
+
+    W1 = Beta('w1', 2, 1)
+    # print('from creator', id(W1))
+
+    W1 = Beta('w1', 0, 1)
+    # print('from creator', id(W1))
+
+    W1 = Beta('w5', 1, 1)
+    # print('from creator', id(W1))
     W2 = Beta('w2', 0, 0)
+    # print('from creator', id(W2))
     W3 = Beta('w3', 0, 0)
+    # print('from creator', id(W3))
     W4 = Beta('w4', 0, 0)
+    # print('from creator', id(W4))
+
+    # for B in Beta.BetaList:
+    #     print(B.name, B.initial_value, B.constraint)
     F1 = Formula((W1, a1), (W2, b1), (W3, p1), (W4, q1))
     F2 = Formula((W1, a2), (W2, b2), (W3, p2), (W4, q2))
     F2 = Formula((W1, a3), (W2, b3), (W3, p3), (W4, q3))
 
+    ddd.creat_model(errorDist=normal(0, 1, 400), probit=True)
 
-
-    ddd.creat_model(formula=Formula.formulaList, BetaList=Beta.BetaList, probit=True)
-
-    history, new_model = ddd.fit_model(target)
-
-    print(ddd.estimated_parameters())
-    stop = timeit.default_timer()
-    print('Time: ', stop - start)
-
-    ddd.plot_parameters_history()
-
+    # history, new_model = ddd.fit_model(target)
+    #
+    # print(ddd.estimated_parameters())
+    # stop = timeit.default_timer()
+    # print('Time: ', stop - start)
+    #
+    # ddd.plot_parameters_history()

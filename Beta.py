@@ -6,18 +6,26 @@ class Beta:
     # global BetaList
 
     def __init__(self, name, initial_value=np.random.normal(0, 1), constraint=0):
-
-        self.error = False
+        self.name = None
+        self.initial_value = None
+        self.constraint = None
+        # self.error = False
         if name not in Beta.BetaName:
             Beta.BetaList.append(self)
             Beta.BetaName.append(name)
+            self.name = name
+            self.initial_value = initial_value
+            self.constraint = constraint
         else:
-            self.error = True
-            raise Exception('The Beta name is taken before. Please select unique name for your Beta.')
-            self.__del__()
-        self.name = name
-        self.initial_value = initial_value
-        self.constraint = constraint
+            Beta.BetaList[Beta.BetaName.index(name)].name = name
+            Beta.BetaList[Beta.BetaName.index(name)].initial_value = initial_value
+            Beta.BetaList[Beta.BetaName.index(name)].constraint = constraint
+
+            # self.error = True
+            # raise Exception('The Beta name is taken before. Please select unique name for your Beta.')
+            # self.__del__()
+        # print('from class', id(self))
+
 
 
 
@@ -31,9 +39,16 @@ class Beta:
         return self.initialValue
 
     def __del__(self):
-        if self.error:
+        if self.name in Beta.BetaName:
+            Beta.BetaList.remove([Beta.BetaName.index(self.name)])
+            Beta.BetaName.remove(self.name)
             Beta.BetaList = list(set(Beta.BetaList))
             Beta.BetaName = list(set(Beta.BetaName))
 
-        else:
-            Beta.BetaName.remove(self.name)
+
+        # if self.error:
+        #     Beta.BetaList = list(set(Beta.BetaList))
+        #     Beta.BetaName = list(set(Beta.BetaName))
+        #
+        # else:
+        #     Beta.BetaName.remove(self.name)
