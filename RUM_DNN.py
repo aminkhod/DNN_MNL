@@ -35,8 +35,10 @@ from numpy.random import *
 
 
 def attach(df):
-    for col in df.columns:
-        globals()[col] = df[col]
+    # globals()['Dataset1'] = df
+    # for col in df.columns:
+    #     globals()[col] = df[col]
+    globals().update(dict(df))
 
 
 class RUM_DNN():
@@ -107,20 +109,20 @@ class RUM_DNN():
 
                 for arg in formula.args:
                     if isinstance(arg, tuple):
-                        if arg[0].name not in BetaNames:
-                            wList.append(self.add_weight(name=arg[0].name, shape=(1,)))
+                        if arg[0].betaName not in BetaNames:
+                            wList.append(self.add_weight(name=arg[0].betaName, shape=(1,)))
                             # print(arg[0].name)
                             # ,
                             # constraint = FreezeSlice([arg[0].initial_value],
                             #                          np.s_[[0]]) if arg[0].constraint == 1 else None
-                            BetaNames.append(arg[0].name)
+                            BetaNames.append(arg[0].betaName)
                     if isinstance(arg, Beta):
-                        if arg.name not in BetaNames:
-                            wList.append(self.add_weight(name=arg.name, shape=(1,)))
+                        if arg.betaName not in BetaNames:
+                            wList.append(self.add_weight(name=arg.betaName, shape=(1,)))
                             # ,
                             # constraint = FreezeSlice([arg.initial_value],
                             #                          np.s_[[0]]) if arg.constraint == 1 else None
-                            BetaNames.append(arg.name)
+                            BetaNames.append(arg.betaName)
 
             self.wList = wList
             super().build(input_shape)
@@ -246,7 +248,7 @@ class RUM_DNN():
         def F(x):
             return x
 
-    def creat_model(this,formulaDict, errorDist=None, correlation=False):
+    def creat_model(this, formulaDict, errorDist=None, correlation=False):
         # Updating list of formulas which are used in model
         Formula.formulaList = [x[1] for x in sorted(formulaDict.items(), key=lambda x: x[0])]
         # Creating a local database based on formula variables.
@@ -476,22 +478,11 @@ if __name__ == '__main__':
     Dataset.drop('Unnamed: 0', inplace=True, axis=1)
     target = ddd.dense_to_one_hot(Dataset['choice'])
     # print(target)
+    # def attach(df):
+    #     for col in df.columns:
+    #         globals()[col] = df[col]
     attach(Dataset)
-
-    # print(Dataset.columns)
-
-    # ASC_TRAIN = Beta('ASC', 0, 0)
-    # ASC_SM = Beta('ASCc', 0, 0)
-    # ASC = Beta('newASC', 4, 1)
-    # # print(type(ASC_SM))
-    # f1 = Formula((ASC_TRAIN, a1), (ASC_SM, b1))
-    # f2 = Formula((ASC_TRAIN, b1))
-    # f3 = Formula((ASC))
-    # print(Formula.formulaList[0].get_args())
-    # print(Formula.formulaList)
-    # for f in Formula.formulaList:
-    #     print(f.get_args())
-    # print(Formula.dataFrame)
+    globals().update(dict(Dataset))
 
     W1 = Beta('w1', 0, 0)
     # print('from creator', id(W1))
@@ -517,17 +508,24 @@ if __name__ == '__main__':
     # for B in Beta.BetaList:
     #     print(B.name, B.initial_value, B.constraint)
     F1 = Formula((W1, a2), (W2, b2), (W3, p2), (W4, q2))
+
     F2 = Formula((W1, a1), (W2, b1), (W3, p1), (W4, q1))
 
-    F1 = Formula((W1, a1), (W2, b1), (W3, p1), (W4, q1))
-    F3 = Formula((W1, a3), (W2, b3), (W3, p3), (W4, q3))
+    # F1 = Formula((W1, a1), (W2, b1), (W3, p1), (W4, q1))
+    F3 = Formula((a3, W1), (W2, b3), (W3, p3), (W4, q3))
     v = {'1': F1, '0': F2, '2': F3}
     # print(v)
+    # print(list(v.values()))
+
+    # for formul in v.values():
+    #     print(type(formul))
+
+
     # print(sorted(v.items(), key=lambda x: x[0]))
     # vsor = [x[1] for x in sorted(v.items(), key=lambda x: x[0])]
     # for el in vsor:
     #     print(el)
-    # print(list(v.values()))
+
     ddd.creat_model(formulaDict=v, errorDist=normal(0, 1, 400), correlation=True)
 
     history, new_model = ddd.fit_model(target)
