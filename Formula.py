@@ -55,7 +55,7 @@ class Formula:
             for arg in form.args:
                 # print(type(arg))
                 if not isinstance(arg, Beta):
-                    z.append(arg[1].betaName)
+                    z.append(arg[1].name)
                     Formula.dataFrame = pd.concat([Formula.dataFrame, arg[1]], axis=1)
                     Formula.dataFrame.columns = z
 

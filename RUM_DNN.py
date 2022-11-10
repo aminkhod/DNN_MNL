@@ -512,7 +512,7 @@ if __name__ == '__main__':
     F2 = Formula((W1, a1), (W2, b1), (W3, p1), (W4, q1))
 
     # F1 = Formula((W1, a1), (W2, b1), (W3, p1), (W4, q1))
-    F3 = Formula((a3, W1), (W2, b3), (W3, p3), (W4, q3))
+    F3 = Formula((W1, a3 ), (W2, b3), (W3, p3), (W4, q3))
     v = {'1': F1, '0': F2, '2': F3}
     # print(v)
     # print(list(v.values()))
