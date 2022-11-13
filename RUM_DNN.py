@@ -8,8 +8,8 @@ Created on Wed Jun 22 10:46:24 2022
 
 """library_____________________________________________________________________"""
 from random import seed
+
 seed(1)
-import timeit
 
 from builtins import isinstance
 
@@ -20,8 +20,6 @@ from matplotlib import pyplot as plt
 
 from Beta import Beta
 from Formula import Formula
-from tabulate import tabulate
-
 
 """DNN Model___________________________________________________________________"""
 from keras.constraints import Constraint
@@ -36,16 +34,15 @@ import tensorflow.compat.v1.keras.backend as K
 from numpy.random import *
 
 
-# def attach(df):
-#     # globals()['Dataset1'] = df
-#     # for col in df.columns:
-#     #     globals()[col] = df[col]
-#     globals().update(dict(df))
+def attach(df):
+    # globals()['Dataset1'] = df
+    # for col in df.columns:
+    #     globals()[col] = df[col]
+    globals().update(dict(df))
 
 
 class RUM_DNN():
     def __init__(this, batch=100, iternum=200, epochs=200, activation=None):
-        this.result = None
         this.correlation = False
         this.dataset = None
         this.target = None
@@ -126,7 +123,6 @@ class RUM_DNN():
                             # constraint = FreezeSlice([arg.initial_value],
                             #                          np.s_[[0]]) if arg.constraint == 1 else None
                             BetaNames.append(arg.betaName)
-
 
             self.wList = wList
             super().build(input_shape)
@@ -210,8 +206,6 @@ class RUM_DNN():
                 for arg in formula.args:
                     print(betaindex, inputindex)
                     if isinstance(arg, tuple):
-                        print(len(self.wList), betaindex, inputs.shape, inputindex)
-                        print(self.wList)
                         weight_input += tf.math.multiply(self.wList[betaindex], inputs[:, inputindex])
                         # print(weight_input)
                         inputindex += 1
@@ -303,30 +297,6 @@ class RUM_DNN():
                                      callbacks=[cbk])
         this.weights_dict = weights_dict
         this.history = history
-
-        ### Showing parameters:
-        this.estimated_parameters()
-        BetaNames = []
-        for formula in Formula.formulaList:
-            for arg in formula.args:
-                if isinstance(arg, tuple):
-                    if arg[0].betaName not in BetaNames:
-                        BetaNames.append(arg[0].betaName)
-                if isinstance(arg, Beta):
-                    if arg.betaName not in BetaNames:
-                        BetaNames.append(arg.betaName)
-        if this.correlation:
-            if len(Formula.formulaList) == 3:
-                BetaNames.append("corr")
-
-            elif len(Formula.formulaList) == 4:
-                BetaNames.extend(["corr1", "corr2", "corr3"])
-
-        result = pd.DataFrame()
-
-        result['Parameters'], result['Value'] = BetaNames, this.parameters
-        this.result = result
-        print(tabulate(this.result, headers=this.result.columns, tablefmt="fancy_grid"))
         return (this.history, this.new_model)
 
     """Extracting Weights__________________________________________________________"""
@@ -342,7 +312,7 @@ class RUM_DNN():
     """Extracting Weights__________________________________________________________"""
 
     def plot_parameters_history(this):
-        # this.estimated_parameters()
+        this.estimated_parameters()
 
         weights_epochs = np.zeros((len(this.parameters), this.epochs))
         for j in range(len(this.parameters)):
@@ -351,23 +321,15 @@ class RUM_DNN():
 
         # ploting parameters history
         epoch = np.arange(1, this.epochs + 1, 1)
-        betaNames = []
-        for formula in Formula.formulaList:
-            for arg in formula.args:
-                if isinstance(arg, tuple):
-                    if arg[0].betaName not in betaNames:
-                        betaNames.append(arg[0].betaName)
-                if isinstance(arg, Beta):
-                    if arg.betaName not in betaNames:
-                        betaNames.append(arg.betaName)
+        betaNames = Beta.BetaName
         if this.correlation:
-            if len(Formula.formulaList) == 3:
+            if len(Formula.formulaList) == 2:
                 for j in range(len(this.parameters) - 1):
                     plt.plot(epoch, weights_epochs[j, :], label=betaNames[j])
                 plt.plot(epoch, weights_epochs[-1, :], label="corr")
                 plt.legend()
                 plt.show()
-            elif len(Formula.formulaList) == 4:
+            elif len(Formula.formulaList) == 3:
                 for j in range(len(this.parameters) - 3):
                     plt.plot(epoch, weights_epochs[j, :], label=betaNames[j])
                 plt.plot(epoch, weights_epochs[-3, :], label="corr1")
@@ -463,6 +425,7 @@ class RUM_DNN():
                 Hessian.append((np.array(get_Hess_funcs[j](func_inputs))))
 
             Hessian = np.squeeze(Hessian)
+
             return Hessian
 
         mat = get_inverse_Hessian(this.new_model, this.dataset, this.target)
@@ -471,18 +434,6 @@ class RUM_DNN():
         invHess_abs = np.abs(invHess)
 
         stds = [invHess_abs[i][i] ** 0.5 for i in range(invHess_abs.shape[0])]
-        this.result['STDError'] = stds
-        print(tabulate(this.result, headers=this.result.columns, tablefmt="fancy_grid"))
-
-        # plt.rcParams["figure.autolayout"] = True
-        # fig, axs = plt.subplots(1, 1)
-        # # data = np.random.random((10, 3))
-        # # columns = ("Column I", "Column II", "Column III")
-        # axs.axis('tight')
-        # axs.axis('off')
-        # the_table = axs.table(cellText=this.result.values, colLabels=this.result.columns, loc='center')
-        # plt.show()
-
         return stds
 
     """STANDARD ERROR______________________________________________________________"""
@@ -517,10 +468,11 @@ class RUM_DNN():
 
 if __name__ == '__main__':
     # from RUM_DNN import *
+    import timeit
 
     start = timeit.default_timer()
-    iter = 2000
-    ddd = RUM_DNN(iternum=iter, epochs=200)
+
+    ddd = RUM_DNN(iternum=400, epochs=200)
     Dataset = pd.read_excel('Dataset_MNP2.xlsx')
 
     Dataset.drop('Unnamed: 0', inplace=True, axis=1)
@@ -529,30 +481,22 @@ if __name__ == '__main__':
     # def attach(df):
     #     for col in df.columns:
     #         globals()[col] = df[col]
-    # attach(Dataset)
+    attach(Dataset)
     globals().update(dict(Dataset))
 
     W1 = Beta('w1', 0, 0)
     # print('from creator', id(W1))
-    # print(W1.betaName)
 
     W1 = Beta('w1', 2, 0)
     # print('from creator', id(W1))
-    # print(W1.betaName)
 
     W1 = Beta('w1', 2, 1)
-    # print(W1.betaName)
     # print('from creator', id(W1))
 
     W1 = Beta('w1', 0, 1)
     # print('from creator', id(W1))
-    # print(W1.betaName)
 
     W1 = Beta('w5', 1, 1)
-    # print(W1.betaName)
-    W1 = Beta('w5', 1, 1)
-    # print(W1.betaName)
-
     # print('from creator', id(W1))
     W2 = Beta('w2', 0, 0)
     # print('from creator', id(W2))
@@ -568,7 +512,7 @@ if __name__ == '__main__':
     F2 = Formula((W1, a1), (W2, b1), (W3, p1), (W4, q1))
 
     # F1 = Formula((W1, a1), (W2, b1), (W3, p1), (W4, q1))
-    F3 = Formula(( W1, a3), (W2, b3), (W3, p3), (W4, q3))
+    F3 = Formula((W1, a3 ), (W2, b3), (W3, p3), (W4, q3))
     v = {'1': F1, '0': F2, '2': F3}
     # print(v)
     # print(list(v.values()))
@@ -582,7 +526,7 @@ if __name__ == '__main__':
     # for el in vsor:
     #     print(el)
 
-    ddd.creat_model(formulaDict=v, errorDist=normal(0, 1, iter), correlation=True)
+    ddd.creat_model(formulaDict=v, errorDist=normal(0, 1, 400), correlation=True)
 
     history, new_model = ddd.fit_model(target)
 
@@ -591,4 +535,3 @@ if __name__ == '__main__':
     print('Time: ', stop - start)
 
     ddd.plot_parameters_history()
-    ddd.STDError()
