@@ -515,7 +515,7 @@ class RUM_DNN():
 
 
 if __name__ == '__main__':
-    # from RUM_DNN import *
+    from RUM_DNN import *
 
     start = timeit.default_timer()
     iter = 400
