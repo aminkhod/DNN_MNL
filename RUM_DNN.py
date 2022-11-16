@@ -113,18 +113,16 @@ class RUM_DNN():
                 for arg in formula.args:
                     if isinstance(arg, tuple):
                         if arg[0].betaName not in BetaNames:
-                            wList.append(self.add_weight(name=arg[0].betaName, shape=(1,)))
+                            wList.append(self.add_weight(name=arg[0].betaName, shape=(1,),
+                                        constraint=FreezeSlice([arg[0].initial_value],
+                                                    np.s_[[0]]) if arg[0].constraint == 1 else None))
                             # print(arg[0].name)
-                            # ,
-                            # constraint = FreezeSlice([arg[0].initial_value],
-                            #                          np.s_[[0]]) if arg[0].constraint == 1 else None
                             BetaNames.append(arg[0].betaName)
                     if isinstance(arg, Beta):
                         if arg.betaName not in BetaNames:
-                            wList.append(self.add_weight(name=arg.betaName, shape=(1,)))
-                            # ,
-                            # constraint = FreezeSlice([arg.initial_value],
-                            #                          np.s_[[0]]) if arg.constraint == 1 else None
+                            wList.append(self.add_weight(name=arg.betaName, shape=(1,),
+                                        constraint=FreezeSlice([arg.initial_value],
+                                                    np.s_[[0]]) if arg.constraint == 1 else None))
                             BetaNames.append(arg.betaName)
 
             self.wList = wList
@@ -253,7 +251,7 @@ class RUM_DNN():
         def F(x):
             return x
 
-    def creat_model(this, formulaDict, errorDist=None, correlation=False):
+    def creat_model(this, formulaDict, errorDist=None, correlation=False, gamma=1e4):
         # Updating list of formulas which are used in model
         Formula.formulaList = [x[1] for x in sorted(formulaDict.items(), key=lambda x: x[0])]
         # Creating a local database based on formula variables.
@@ -270,8 +268,8 @@ class RUM_DNN():
 
         mergedOutput = tf.transpose(mergedOutput1, perm=[0, 2, 1])
 
-        beta = 1e4
-        mergedOutput = tf.nn.softmax(mergedOutput * beta)
+
+        mergedOutput = tf.nn.softmax(mergedOutput * gamma)
 
         mergedOutput = tf.reduce_sum(mergedOutput, 1)
 
@@ -584,7 +582,7 @@ if __name__ == '__main__':
     # for el in vsor:
     #     print(el)
 
-    ddd.creat_model(formulaDict=v, errorDist=normal(0, 1, iter), correlation=True)
+    ddd.creat_model(formulaDict=v, errorDist=normal(0, 1, iter), correlation=True, gamma=1e4)
 
     history, new_model = ddd.fit_model(target)
 
