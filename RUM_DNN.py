@@ -114,6 +114,7 @@ class RUM_DNN():
                     if isinstance(arg, tuple):
                         if arg[0].betaName not in BetaNames:
                             wList.append(self.add_weight(name=arg[0].betaName, shape=(1,),
+                                        initializer=tf.keras.initializers.Constant(arg[0].initial_value),
                                         constraint=FreezeSlice([arg[0].initial_value],
                                                     np.s_[[0]]) if arg[0].constraint == 1 else None))
                             # print(arg[0].name)
@@ -121,6 +122,7 @@ class RUM_DNN():
                     if isinstance(arg, Beta):
                         if arg.betaName not in BetaNames:
                             wList.append(self.add_weight(name=arg.betaName, shape=(1,),
+                                        initializer=tf.keras.initializers.Constant(arg.initial_value),
                                         constraint=FreezeSlice([arg.initial_value],
                                                     np.s_[[0]]) if arg.constraint == 1 else None))
                             BetaNames.append(arg.betaName)
@@ -207,8 +209,8 @@ class RUM_DNN():
                 for arg in formula.args:
                     print(betaindex, inputindex)
                     if isinstance(arg, tuple):
-                        print(len(self.wList), betaindex, inputs.shape, inputindex)
-                        print(self.wList)
+                        # print(len(self.wList), betaindex, inputs.shape, inputindex)
+                        # print(self.wList)
                         weight_input += tf.math.multiply(self.wList[betaindex], inputs[:, inputindex])
                         # print(weight_input)
                         inputindex += 1
@@ -513,11 +515,11 @@ class RUM_DNN():
 
 
 if __name__ == '__main__':
-    from RUM_DNN import *
+    # from RUM_DNN import *
 
     start = timeit.default_timer()
     iter = 400
-    ddd = RUM_DNN(iternum=iter, epochs=200)
+    ddd = RUM_DNN(iternum=iter, epochs=30)
     Dataset = pd.read_excel('Dataset_MNP2.xlsx')
 
     Dataset.drop('Unnamed: 0', inplace=True, axis=1)
@@ -529,33 +531,33 @@ if __name__ == '__main__':
     # attach(Dataset)
     globals().update(dict(Dataset))
 
-    W1 = Beta('w1', 0, 0)
+    W1 = Beta('w1', constraint=0, initial_value=None)
     # print('from creator', id(W1))
     # print(W1.betaName)
 
-    W1 = Beta('w1', 2, 0)
+    W1 = Beta('w1', constraint=0, initial_value=None)
     # print('from creator', id(W1))
     # print(W1.betaName)
 
-    W1 = Beta('w1', 2, 1)
+    W1 = Beta('w1', constraint=0, initial_value=None)
     # print(W1.betaName)
     # print('from creator', id(W1))
 
-    W1 = Beta('w1', 0, 1)
+    W1 = Beta('w1', constraint=0, initial_value=None)
     # print('from creator', id(W1))
     # print(W1.betaName)
 
-    W1 = Beta('w5', 1, 1)
+    W1 = Beta('w5', constraint=0, initial_value=None)
     # print(W1.betaName)
-    W1 = Beta('w5', 1, 1)
+    W1 = Beta('w5', constraint=0, initial_value=None)
     # print(W1.betaName)
 
     # print('from creator', id(W1))
-    W2 = Beta('w2', 0, 0)
+    W2 = Beta('w2', constraint=0, initial_value=None)
     # print('from creator', id(W2))
-    W3 = Beta('w3', 0, 0)
+    W3 = Beta('w3', constraint=0, initial_value=None)
     # print('from creator', id(W3))
-    W4 = Beta('w4', 0, 0)
+    W4 = Beta('w4', constraint=0, initial_value=None)
     # print('from creator', id(W4))
 
     # for B in Beta.BetaList:
@@ -582,7 +584,7 @@ if __name__ == '__main__':
     # for el in vsor:
     #     print(el)
 
-    ddd.creat_model(formulaDict=v, errorDist=normal(0, 1, iter), correlation=True, gamma=1e4)
+    ddd.creat_model(formulaDict=v, errorDist=normal(0, 1, iter), correlation=False, gamma=1e4)
 
     history, new_model = ddd.fit_model(target)
 
@@ -591,4 +593,4 @@ if __name__ == '__main__':
     print('Time: ', stop - start)
 
     ddd.plot_parameters_history()
-    ddd.STDError()
+    # ddd.STDError()
