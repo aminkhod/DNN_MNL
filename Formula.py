@@ -8,7 +8,8 @@ class Formula:
     dataFrame = pd.DataFrame()
 
     # nameList = []
-    def __init__(self, *args):
+    def __init__(self, args, errorWeight=1):
+        self.errorWeight = errorWeight
         for arg in args:
             # print(type(arg))
             if isinstance(arg, Beta):

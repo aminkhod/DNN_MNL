@@ -62,7 +62,7 @@ class RUM_DNN():
     class Dense1(Layer):
 
         def __init__(self, iternum, formula, BetaList, correlation=False,
-                     dist=None, activation=None, **kwargs):
+                     errorDist=None, errorParam=[0, 1], activation=None, **kwargs):
             self.wList = None
             self.vList = None
             self.errorList = None
@@ -72,15 +72,24 @@ class RUM_DNN():
             self.correlation = correlation
             self.activation = activations.get(activation)
             self.iternum = iternum
-            if dist is None:
-                normal(0, 1, self.iternum)
-            elif len(list(dist)) == self.iternum:
-                self.dist = dist
-            else:
-                raise Exception('The entered error initial list must be list of float numbers'
-                                ' with length that equal to "iternum" parameter.')
+            self.errorDist = errorDist
+            self.errorParam = errorParam
+            # print(self.errorParam)
+            # print(self.errorParam[0], self.errorParam[1])
+            # self.errorVectors = self.errorDefination(formulas=self.formulas,
+            #                                          errorDist=self.errorDist, errorParam=self.errorParam)
 
             super().__init__(**kwargs)
+
+        # def errorDefination(self, formulas, errorDist, errorParam):
+        #     errorvectors = []
+        #     for formula in formulas:
+        #         if errorDist.lower() == 'normal':
+        #             error = tf.convert_to_tensor(normal(errorParam[0], errorParam[1]),
+        #                                          dtype='float32', dtype_hint=None, name=None)
+        #             errorvectors.append(error)
+        #
+        #     return errorvectors
 
         def build(self, input_shape):
             class FreezeSlice(Constraint):
@@ -114,9 +123,10 @@ class RUM_DNN():
                     if isinstance(arg, tuple):
                         if arg[0].betaName not in BetaNames:
                             wList.append(self.add_weight(name=arg[0].betaName, shape=(1,),
-                                        initializer=tf.keras.initializers.Constant(arg[0].initial_value),
-                                        constraint=FreezeSlice([arg[0].initial_value],
-                                                    np.s_[[0]]) if arg[0].constraint == 1 else None))
+                                                         initializer=tf.keras.initializers.Constant(
+                                                             arg[0].initial_value),
+                                                         constraint=FreezeSlice([arg[0].initial_value],
+                                                           np.s_[[0]]) if arg[0].constraint == 1 else None))
                             # print(arg[0].name)
                             BetaNames.append(arg[0].betaName)
                     if isinstance(arg, Beta):
@@ -124,7 +134,7 @@ class RUM_DNN():
                             wList.append(self.add_weight(name=arg.betaName, shape=(1,),
                                         initializer=tf.keras.initializers.Constant(arg.initial_value),
                                         constraint=FreezeSlice([arg.initial_value],
-                                                    np.s_[[0]]) if arg.constraint == 1 else None))
+                                                          np.s_[[0]]) if arg.constraint == 1 else None))
                             BetaNames.append(arg.betaName)
 
             self.wList = wList
@@ -136,12 +146,19 @@ class RUM_DNN():
             outList = []
 
             for formula in self.formulas:
-                # if len(list(self.dist)) == self.iternum:
-                #     error = self.dist
-                # else:
-                #     error = [self.dist for i in range(self.iternum)]
-                # print(len(list([self.dist])), self.dist)
-                error = tf.convert_to_tensor(self.dist, dtype='float32', dtype_hint=None, name=None)
+                try:
+
+                    error = tf.convert_to_tensor(self.errorDist(self.errorParam[0], self.errorParam[1],
+                                                                size=self.iternum), dtype='float32', dtype_hint=None,
+                                                 name=None)
+                except:
+                    try:
+                        error = tf.convert_to_tensor(
+                            self.errorDist(self.errorParam[0], size=self.iternum),
+                            dtype='float32', dtype_hint=None, name=None)
+                    except:
+                        error = tf.convert_to_tensor(self.errorDist(size=self.iternum),
+                                                     dtype='float32', dtype_hint=None, name=None)
                 # print(type(formula.args))
                 errorList.append(error)
 
@@ -224,14 +241,22 @@ class RUM_DNN():
                 if self.correlation:
                     if formulaindex + 1 <= len(errorList):
                         out = tf.expand_dims(tf.matmul(v, tf.ones((1, self.iternum),
-                                                                  tf.float32)) + errorList[formulaindex], axis=1)
+                                            tf.float32)) + formula.errorWeight * errorList[
+                                                 formulaindex], axis=1)
                     else:
                         out = tf.expand_dims(tf.matmul(v, tf.ones((1, self.iternum),
                                                                   tf.float32)), axis=1)
 
                 else:
                     out = tf.expand_dims(tf.matmul(v, tf.ones((1, self.iternum),
-                                                              tf.float32)) + errorList[formulaindex], axis=1)
+                                                              tf.float32)) + formula.errorWeight * errorList[
+                                             formulaindex], axis=1)
+                    # self.add_weight('error weight_' + str(formulaindex), shape=(1,),
+                    #                 initializer=tf.keras.initializers.Constant(
+                    #                    formula.errorWeight),
+                    #                    constraint=FreezeSlice([formula.errorWeight],
+                    #                                        np.s_[[0]])) *
+                    # errorList[formulaindex], axis=1)
                 vList.append(v)
                 outList.append(out)
 
@@ -253,7 +278,7 @@ class RUM_DNN():
         def F(x):
             return x
 
-    def creat_model(this, formulaDict, errorDist=None, correlation=False, gamma=1e4):
+    def creat_model(this, formulaDict, errorDist=None, errorLoc=0, errorScale=1, correlation=False, gamma=1e4):
         # Updating list of formulas which are used in model
         Formula.formulaList = [x[1] for x in sorted(formulaDict.items(), key=lambda x: x[0])]
         # Creating a local database based on formula variables.
@@ -263,13 +288,12 @@ class RUM_DNN():
         rowNum, columnsNum = Formula.dataFrame.shape
         Utility1.add(tf.keras.layers.InputLayer((columnsNum,), name='inp_1'))
         Utility1.add(this.Dense1(formula=Formula.formulaList, BetaList=Beta.BetaList, correlation=correlation,
-                                 iternum=this.iternum, dist=errorDist))
+                                 iternum=this.iternum, errorDist=errorDist, errorParam=[errorLoc, errorScale]))
 
         this.correlation = correlation
         mergedOutput1 = Utility1.output
 
         mergedOutput = tf.transpose(mergedOutput1, perm=[0, 2, 1])
-
 
         mergedOutput = tf.nn.softmax(mergedOutput * gamma)
 
@@ -287,6 +311,8 @@ class RUM_DNN():
         return new_model
 
     def fit_model(this, target):
+        start = timeit.default_timer()
+
         this.dataset = Formula.dataFrame
         this.target = target
         this.new_model.compile(optimizer='Adam', loss='categorical_crossentropy', metrics=['categorical_accuracy'])
@@ -326,6 +352,8 @@ class RUM_DNN():
         result['Parameters'], result['Value'] = BetaNames, this.parameters
         this.result = result
         print(tabulate(this.result, headers=this.result.columns, tablefmt="fancy_grid"))
+        stop = timeit.default_timer()
+        print('Computational time: ', stop - start)
         return (this.history, this.new_model)
 
     """Extracting Weights__________________________________________________________"""
@@ -516,10 +544,9 @@ class RUM_DNN():
 
 if __name__ == '__main__':
     # from RUM_DNN import *
-
     start = timeit.default_timer()
-    iter = 400
-    ddd = RUM_DNN(iternum=iter, epochs=30)
+    iter = 2000
+    ddd = RUM_DNN(iternum=iter, epochs=300)
     Dataset = pd.read_excel('Dataset_MNP2.xlsx')
 
     Dataset.drop('Unnamed: 0', inplace=True, axis=1)
@@ -558,19 +585,21 @@ if __name__ == '__main__':
     W3 = Beta('w3', constraint=0, initial_value=None)
     # print('from creator', id(W3))
     W4 = Beta('w4', constraint=0, initial_value=None)
+    # W6 = Beta('w6', constraint=1, initial_value=0)
+
     # print('from creator', id(W4))
 
     # for B in Beta.BetaList:
     #     print(B.name, B.initial_value, B.constraint)
-    F1 = Formula((W1, a2), (W2, b2), (W3, p2), (W4, q2))
+    F1 = Formula([ (W1, a2), (W2, b2), (W3, p2), (W4, q2)], errorWeight=2)
 
-    F2 = Formula((W1, a1), (W2, b1), (W3, p1), (W4, q1))
+    F2 = Formula([(W1, a1), (W2, b1), (W3, p1), (W4, q1)], errorWeight=2)
 
-    # F1 = Formula((W1, a1), (W2, b1), (W3, p1), (W4, q1))
+    # F1 = Formula([(W1, a1), (W2, b1), (W3, p1), (W4, q1)], errorWeight=1)
 
-    F3 = Formula((W1, a3), (W2, b3), (W3, p3), (W4, q3))
+    F3 = Formula([(W1, a3), (W2, b3), (W3, p3), (W4, q3)], errorWeight=2)
 
-    F3 = Formula((W1, a3), (W2, b3), (W3, p3), (W4, q3))
+    F3 = Formula([(W1, a3), (W2, b3), (W3, p3), (W4, q3)], errorWeight=2)
 
     v = {'1': F1, '0': F2, '2': F3}
     # print(v)
@@ -584,7 +613,7 @@ if __name__ == '__main__':
     # for el in vsor:
     #     print(el)
 
-    ddd.creat_model(formulaDict=v, errorDist=normal(0, 1, iter), correlation=False, gamma=1e4)
+    ddd.creat_model(formulaDict=v, errorDist=normal, errorLoc=0, errorScale=1, correlation=True, gamma=1e4)
 
     history, new_model = ddd.fit_model(target)
 
