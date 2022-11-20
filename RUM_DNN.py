@@ -224,7 +224,7 @@ class RUM_DNN():
                 weight_input = 0
                 betaindex = 0  # index for Betas and inputs
                 for arg in formula.args:
-                    print(betaindex, inputindex)
+                    # print(betaindex, inputindex)
                     if isinstance(arg, tuple):
                         # print(len(self.wList), betaindex, inputs.shape, inputindex)
                         # print(self.wList)
@@ -547,7 +547,7 @@ if __name__ == '__main__':
     start = timeit.default_timer()
     iter = 2000
     ddd = RUM_DNN(iternum=iter, epochs=300)
-    Dataset = pd.read_excel('Dataset_MNP2.xlsx')
+    Dataset = pd.read_excel('Dataset_MNL3.xlsx')
 
     Dataset.drop('Unnamed: 0', inplace=True, axis=1)
     target = ddd.dense_to_one_hot(Dataset['choice'])
@@ -613,7 +613,7 @@ if __name__ == '__main__':
     # for el in vsor:
     #     print(el)
 
-    ddd.creat_model(formulaDict=v, errorDist=normal, errorLoc=0, errorScale=1, correlation=True, gamma=1e4)
+    ddd.creat_model(formulaDict=v, errorDist=gumbel, errorLoc=0, errorScale=1, correlation=False, gamma=1e4)
 
     history, new_model = ddd.fit_model(target)
 
