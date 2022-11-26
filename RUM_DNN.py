@@ -97,7 +97,7 @@ class RUM_DNN():
 
             wList = []
             BetaNames = []
-
+            self.wOrderNames = []
             for formula in self.formulas:
 
                 for arg in formula.args:
@@ -110,8 +110,11 @@ class RUM_DNN():
                                                            trainable=True if arg[0].constraint == 0 else False,
                                                          constraint=FreezeSlice([arg[0].initial_value],
                                                            np.s_[[0]]) if arg[0].constraint == 1 else None))
+                            self.wOrderNames.append(wList[-1].name)
                             # print(arg[0].name)
                             BetaNames.append(arg[0].betaName)
+                        else:
+                            self.wOrderNames.append(self.add_weight(name=arg[0].betaName).name)
                     if isinstance(arg, Beta):
                         if arg.betaName not in BetaNames:
                             wList.append(self.add_weight(name=arg.betaName, shape=(1,),
@@ -120,6 +123,10 @@ class RUM_DNN():
                                                           np.s_[[0]]) if arg.constraint == 1 else None,
                                         trainable=False if arg.constraint == 1 else True))
                             BetaNames.append(arg.betaName)
+                            self.wOrderNames.append(wList[-1].name)
+
+                        else:
+                            self.wOrderNames.append(self.add_weight(name=arg[0].betaName).name)
 
             self.wList = wList
             print(wList)
@@ -134,7 +141,7 @@ class RUM_DNN():
                 try:
 
                     error = tf.convert_to_tensor(self.errorDist(self.errorParam[0], self.errorParam[1],
-                                                                size=self.iternum), dtype='float32', dtype_hint=None,
+                                                size=self.iternum), dtype='float32', dtype_hint=None,
                                                  name=None)
                 except:
                     try:
@@ -157,7 +164,9 @@ class RUM_DNN():
                 if len(self.formulas) == 3:
                     self.wList.append(
                         self.add_weight(name='cor', shape=(1,), initializer=tf.keras.initializers.Constant(0.5),
-                                        trainable=True, constraint=tf.keras.constraints.MinMaxNorm(max_value=0.98)))
+                                        trainable=True, constraint=tf.
+                                        keras.constraints.MinMaxNorm(max_value=0.98)))
+                    self.wOrderNames.append(self.wList[-1].name)
 
                     # print(self.wList)
                     o = tf.constant([0.0])
@@ -186,7 +195,9 @@ class RUM_DNN():
                     self.wList.append(
                         self.add_weight(name='cor2', shape=(1,), initializer=tf.keras.initializers.Constant(0.5),
                                         trainable=True, constraint=tf.keras.constraints.MinMaxNorm(max_value=0.98)))
-
+                    self.wOrderNames.append(self.wList[-3].name)
+                    self.wOrderNames.append(self.wList[-2].name)
+                    self.wOrderNames.append(self.wList[-1].name)
                     # print(self.wList)
                     o = tf.constant([0.0])
                     p = tf.constant([1.0])
@@ -206,21 +217,39 @@ class RUM_DNN():
 
             formulaindex = 0
             inputindex = 0
+            betaindex = 0  # index for Betas and inputs
+            print(self.wOrderNames)
             for formula in self.formulas:
                 # print(formula)
                 weight_input = 0
-                betaindex = 0  # index for Betas and inputs
                 for arg in formula.args:
                     print(betaindex, inputindex)
+                    print(self.wList[betaindex].name)
+                    # raise Exception('ss')
                     if isinstance(arg, tuple):
                         # print(len(self.wList), betaindex, inputs.shape, inputindex)
                         # print(self.wList)
-                        weight_input += tf.math.multiply(self.wList[betaindex], inputs[:, inputindex])
+                        print(self.wList[betaindex].name)
+                        betaii = 0
+                        for betaii in self.wList:
+                            if self.wOrderNames[betaindex] == betaii.name:
+                                break
+                        else:
+                            print(self.wOrderNames[betaindex], betaii.name)
+                            raise Exception('Call Nioush')
+                        weight_input += tf.math.multiply(betaii, inputs[:, inputindex])
                         # print(weight_input)
                         inputindex += 1
                         betaindex += 1
                     elif isinstance(arg, Beta):
-                        weight_input += (self.wList[betaindex])
+                        betaii = 0
+                        for betaii in self.wList:
+                            if self.wOrderNames[betaindex] == betaii.name:
+                                break
+                        else:
+                            print(self.wOrderNames[betaindex], betaii.name)
+                            raise Exception('Call Nioush')
+                        weight_input += (betaii)
                         betaindex += 1
 
                 v = tf.expand_dims(weight_input, axis=1)

@@ -9,8 +9,8 @@ import pandas as pd
 """Dataset_____________________________________________________________________"""
 
 
-df_train = pd.read_excel('D:/Newsha/Dr.GHasri/Amin/Montecarlo/Datasets/SM/SM_train.xlsx')
-df_test = pd.read_excel('D:/Newsha/Dr.GHasri/Amin/Montecarlo/Datasets/SM/SM_test.xlsx')
+df_train = pd.read_excel('SM_train.xlsx')
+df_test = pd.read_excel('SM_test.xlsx')
 
 """Preperation_________________________________________________________________"""
 df_train.drop('Unnamed: 0', inplace=True, axis=1)

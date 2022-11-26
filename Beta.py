@@ -17,7 +17,6 @@ class Beta:
             Beta.BetaName.append(name)
 
         else:
-
             Beta.BetaList[Beta.BetaName.index(name)].betaName = name
             Beta.BetaList[Beta.BetaName.index(name)].initial_value = initial_value
             Beta.BetaList[Beta.BetaName.index(name)].constraint = constraint
