@@ -7,11 +7,10 @@ class Formula:
     formulaPair = []
     dataFrame = pd.DataFrame()
 
-    # nameList = []
+
     def __init__(self, args, errorWeight=1):
         self.errorWeight = errorWeight
         for arg in args:
-            # print(type(arg))
             if isinstance(arg, Beta):
                 continue
             else:
@@ -28,26 +27,6 @@ class Formula:
         self.args = args
         # if name not in Formula.nameList:
         Formula.formulaPair.append(self)
-        # Formula.nameList.append(self.name)
-        # else:
-        #     Formula.formulaPair[Formula.nameList.index(name)][1].args = args
-
-        # for f in Formula.formulaPair:
-        #     print(f[0], f[1].args)
-        # for f in Formula.nameList:
-        #     print(f)
-
-        # Formula.formulaList.sort()
-        # for f in Formula.formulaList:
-        # print(f.className)
-
-        # else:
-        #     self.error = True
-        #     raise Exception('The Formula name is taken before. Please s elect unique name for your Formula.')
-        #     self.__del__()
-        # self.name = name
-        # self.initialValue = initial_value
-        # self.constraint = constraint
 
     def createFormulaDataset():
         Formula.dataFrame = pd.DataFrame()
@@ -63,9 +42,7 @@ class Formula:
 
     def get_args(self):
         text = ''
-        # print(self.args[0].name)
         for arg in self.args:
-            # print(type(arg))
             if isinstance(arg, Beta):
                 text += '(' + arg.betaName + ')'
                 text += ' + '

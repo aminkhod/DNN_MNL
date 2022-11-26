@@ -22,11 +22,6 @@ class Beta:
             Beta.BetaList[Beta.BetaName.index(name)].initial_value = initial_value
             Beta.BetaList[Beta.BetaName.index(name)].constraint = constraint
 
-            # self.error = True
-            # raise Exception('The Beta name is taken before. Please select unique name for your Beta.')
-            # self.__del__()
-        # print('from class', id(self))
-
 
 
 
@@ -38,18 +33,3 @@ class Beta:
 
     def get_initialValue(self):
         return self.initialValue
-
-    # def __del__(self):
-    #     if self.betaName in Beta.BetaName:
-    #         # Beta.BetaList.remove([Beta.BetaName.index(self.betaName)])
-    #         # Beta.BetaName.remove(self.betaName)
-    #         Beta.BetaList = list(set(Beta.BetaList))
-    #         Beta.BetaName = list(set(Beta.BetaName))
-
-
-        # if self.error:
-        #     Beta.BetaList = list(set(Beta.BetaList))
-        #     Beta.BetaName = list(set(Beta.BetaName))
-        #
-        # else:
-        #     Beta.BetaName.remove(self.name)
