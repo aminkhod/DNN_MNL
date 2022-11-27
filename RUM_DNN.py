@@ -114,7 +114,16 @@ class RUM_DNN():
                             # print(arg[0].name)
                             BetaNames.append(arg[0].betaName)
                         else:
-                            self.wOrderNames.append(self.add_weight(name=arg[0].betaName).name)
+                            self.wOrderNames.append(wList[BetaNames.index(arg[0].betaName)].name)
+
+                            # for i in range(len(BetaNames)):
+                            #     if arg[0].betaName == BetaNames[i]:
+                            #         self.wOrderNames.append(wList[i].name)
+                            #         break
+                            # for name in self.wOrderNames:
+                            #     if arg[0].betaName in name:
+                            #         self.wOrderNames.append(name)
+                            #         break
                     if isinstance(arg, Beta):
                         if arg.betaName not in BetaNames:
                             wList.append(self.add_weight(name=arg.betaName, shape=(1,),
@@ -126,7 +135,11 @@ class RUM_DNN():
                             self.wOrderNames.append(wList[-1].name)
 
                         else:
-                            self.wOrderNames.append(self.add_weight(name=arg[0].betaName).name)
+                            self.wOrderNames.append(wList[BetaNames.index(arg.betaName)].name)
+                            # for i in range(len(BetaNames)):
+                            #     if arg.betaName == BetaNames[i]:
+                            #         self.wOrderNames.append(wList[i].name)
+                            #         break
 
             self.wList = wList
             print(wList)
@@ -139,7 +152,6 @@ class RUM_DNN():
 
             for formula in self.formulas:
                 try:
-
                     error = tf.convert_to_tensor(self.errorDist(self.errorParam[0], self.errorParam[1],
                                                 size=self.iternum), dtype='float32', dtype_hint=None,
                                                  name=None)
@@ -224,12 +236,12 @@ class RUM_DNN():
                 weight_input = 0
                 for arg in formula.args:
                     print(betaindex, inputindex)
-                    print(self.wList[betaindex].name)
+                    print(self.wOrderNames[betaindex])
                     # raise Exception('ss')
                     if isinstance(arg, tuple):
                         # print(len(self.wList), betaindex, inputs.shape, inputindex)
                         # print(self.wList)
-                        print(self.wList[betaindex].name)
+                        print(self.wOrderNames[betaindex])
                         betaii = 0
                         for betaii in self.wList:
                             if self.wOrderNames[betaindex] == betaii.name:
