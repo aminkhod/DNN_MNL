@@ -51,7 +51,7 @@ V = {0: V_TRAIN, 1: V_SM, 2: V_CAR}
 
 # V = {'1': U2, '0': U1 , '2':U3}
 
-RUM_DNN.creat_model(formulaDict=V, errorDist=gumbel, correlation=False, errorLoc=0, errorScale=1, gamma=1e4)
+RUM_DNN.creat_model(formulaDict=V, errorDist=gumbel, correlation=True, errorLoc=0, errorScale=1, gamma=1e4)
 
 history, model = RUM_DNN.fit_model(target)
 
