@@ -43,7 +43,7 @@ class RUM_DNN():
         this.correlation = False
         this.dataset = None
         this.target = None
-        this.new_model = None
+        this.model = None
         this.parameters = None
         this.batch = batch
         this.iternum = iternum
@@ -72,28 +72,6 @@ class RUM_DNN():
             super().__init__(**kwargs)
 
         def build(self, input_shape):
-            class FreezeSlice(Constraint):
-
-                def __init__(self, values, slice):
-                    if hasattr(values, "numpy"):
-                        self.values = values.numpy()
-                    elif isinstance(values, np.ndarray):
-                        self.values = values
-                    else:
-                        try:
-                            self.values = values.to_numpy()
-                        except:
-                            self.values = np.array(values)
-
-                    self.values = values
-                    self.slice = slice
-
-                def __call__(self, w):
-                    zs = np.zeros(w.shape)
-                    zs[self.slice] = self.values
-                    os = np.ones(w.shape)
-                    os[self.slice] = 0
-                    return w * os + zs
 
             wList = []
             BetaNames = []
@@ -107,42 +85,24 @@ class RUM_DNN():
                             wList.append(self.add_weight(name=arg[0].betaName, shape=(1,),
                                                          initializer=tf.keras.initializers.Constant(
                                                              arg[0].initial_value),
-                                                           trainable=True if arg[0].constraint == 0 else False,
-                                                         constraint=FreezeSlice([arg[0].initial_value],
-                                                           np.s_[[0]]) if arg[0].constraint == 1 else None))
+                                                           trainable=True if arg[0].constraint == 0 else False))
                             self.wOrderNames.append(wList[-1].name)
                             # print(arg[0].name)
                             BetaNames.append(arg[0].betaName)
                         else:
                             self.wOrderNames.append(wList[BetaNames.index(arg[0].betaName)].name)
-
-                            # for i in range(len(BetaNames)):
-                            #     if arg[0].betaName == BetaNames[i]:
-                            #         self.wOrderNames.append(wList[i].name)
-                            #         break
-                            # for name in self.wOrderNames:
-                            #     if arg[0].betaName in name:
-                            #         self.wOrderNames.append(name)
-                            #         break
                     if isinstance(arg, Beta):
                         if arg.betaName not in BetaNames:
                             wList.append(self.add_weight(name=arg.betaName, shape=(1,),
                                         initializer=tf.keras.initializers.Constant(arg.initial_value),
-                                        constraint=FreezeSlice([arg.initial_value],
-                                                          np.s_[[0]]) if arg.constraint == 1 else None,
-                                        trainable=False if arg.constraint == 1 else True))
+                                        trainable=True if arg.constraint == 0 else False))
                             BetaNames.append(arg.betaName)
                             self.wOrderNames.append(wList[-1].name)
 
                         else:
                             self.wOrderNames.append(wList[BetaNames.index(arg.betaName)].name)
-                            # for i in range(len(BetaNames)):
-                            #     if arg.betaName == BetaNames[i]:
-                            #         self.wOrderNames.append(wList[i].name)
-                            #         break
 
             self.wList = wList
-            print(wList)
             super().build(input_shape)
 
         def call(self, inputs, **kwargs):
@@ -232,25 +192,15 @@ class RUM_DNN():
             betaindex = 0  # index for Betas and inputs
             print(self.wOrderNames)
             for formula in self.formulas:
-                # print(formula)
                 weight_input = 0
                 for arg in formula.args:
-                    print(betaindex, inputindex)
-                    print(self.wOrderNames[betaindex])
                     # raise Exception('ss')
                     if isinstance(arg, tuple):
-                        # print(len(self.wList), betaindex, inputs.shape, inputindex)
-                        # print(self.wList)
-                        print(self.wOrderNames[betaindex])
                         betaii = 0
                         for betaii in self.wList:
                             if self.wOrderNames[betaindex] == betaii.name:
                                 break
-                        else:
-                            print(self.wOrderNames[betaindex], betaii.name)
-                            raise Exception('Call Nioush')
                         weight_input += tf.math.multiply(betaii, inputs[:, inputindex])
-                        # print(weight_input)
                         inputindex += 1
                         betaindex += 1
                     elif isinstance(arg, Beta):
@@ -258,9 +208,6 @@ class RUM_DNN():
                         for betaii in self.wList:
                             if self.wOrderNames[betaindex] == betaii.name:
                                 break
-                        else:
-                            print(self.wOrderNames[betaindex], betaii.name)
-                            raise Exception('Call Nioush')
                         weight_input += (betaii)
                         betaindex += 1
 
@@ -300,7 +247,7 @@ class RUM_DNN():
         def F(x):
             return x
 
-    def creat_model(this, formulaDict, errorDist=None, errorLoc=0, errorScale=1, correlation=False, gamma=1e4):
+    def create_model(this, formulaDict, errorDist=None, errorLoc=0, errorScale=1, correlation=False, gamma=1e4):
         # Updating list of formulas which are used in model
         Formula.formulaList = [x[1] for x in sorted(formulaDict.items(), key=lambda x: x[0])]
         # Creating a local database based on formula variables.
@@ -325,29 +272,27 @@ class RUM_DNN():
 
         main_network = tf.transpose(tf.divide(tf.transpose(mergedOutput), Sum))
 
-        new_model = Model(inputs=[Utility1.input], outputs=[main_network])
+        model = Model(inputs=[Utility1.input], outputs=[main_network])
 
-        print(new_model.summary())
+        print(model.summary())
         # raise Exception('')
-        this.new_model = new_model
-        return new_model
+        this.model = model
+        return model
 
     def fit_model(this, target):
-        
-
         this.dataset = Formula.dataFrame
         this.target = target
-        this.new_model.compile(optimizer='Adam', loss='categorical_crossentropy', metrics=['categorical_accuracy'])
+        this.model.compile(optimizer='Adam', loss='categorical_crossentropy', metrics=['categorical_accuracy'])
 
         weights_dict = {}
 
         cbk = tf.keras.callbacks.LambdaCallback(
-            on_epoch_end=lambda epoch, logs: weights_dict.update({epoch: this.new_model.get_weights()}))
+            on_epoch_end=lambda epoch, logs: weights_dict.update({epoch: this.model.get_weights()}))
 
         #callback = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=20, mode='min')
         start = timeit.default_timer()
         
-        history = this.new_model.fit(this.dataset, target, epochs=this.epochs, batch_size=this.batch, shuffle=True,
+        history = this.model.fit(this.dataset, target, epochs=this.epochs, batch_size=this.batch, shuffle=True,
                                      callbacks=[cbk])
         ##Computational time
         stop = timeit.default_timer()
@@ -390,12 +335,24 @@ class RUM_DNN():
         print(tabulate(this.result, headers=this.result.columns, tablefmt="fancy_grid"))
         this.constraint = constraint
         this.result['constraint'] = constraint
-        return (this.history, this.new_model)
+        output = this.model.predict(this.dataset)
+        neg_log = this.Neg_likelihood(target, output)
+        print('Negetive Loglikelihood:   ', neg_log)
+        return (this.history, this.model)
 
     """Extracting Weights__________________________________________________________"""
+    def predict(this, formulaDict, model, dataset):
+        if formulaDict != None:
+            # Updating list of formulas which are used in model
+            Formula.formulaList = [x[1] for x in sorted(formulaDict.items(), key=lambda x: x[0])]
+            # Creating a local database based on formula variables.
+            Formula.createFormulaDataset()
+            return model.predict(Formula.dataFrame)
+        else:
+            return model.predict(Formula.createTestData(dataset))
 
     def estimated_parameters(this):
-        weight = [layer.get_weights() for layer in this.new_model.layers]
+        weight = [layer.get_weights() for layer in this.model.layers]
 
         this.parameters = np.array(weight[1])
         return this.parameters
@@ -422,9 +379,6 @@ class RUM_DNN():
             elif len(Formula.formulaList) == 4:
                 for j in range(len(this.parameters)):
                     plt.plot(epoch, weights_epochs[j, :], label=betaNames[j])
-                # plt.plot(epoch, weights_epochs[-3, :], label="corr1")
-                # plt.plot(epoch, weights_epochs[-2, :], label="corr2")
-                # plt.plot(epoch, weights_epochs[-1, :], label="corr3")
 
         else:
             for j in range(len(this.parameters)):
@@ -486,7 +440,7 @@ class RUM_DNN():
             Hessian = np.squeeze(Hessian)
             return Hessian
 
-        mat = get_inverse_Hessian(this.new_model, this.dataset, this.target)
+        mat = get_inverse_Hessian(this.model, this.dataset, this.target)
         invHess = np.linalg.inv(mat)
 
         invHess_abs = np.abs(invHess)
@@ -501,6 +455,15 @@ class RUM_DNN():
         results2['p-value'] = 2*(1-np.array(norms))
         print(tabulate(results2, headers=results2.columns, tablefmt="fancy_grid"))
         return results2
+    
+    """Negetive LOglikelihood______________________________________________________"""
+    
+    def Neg_likelihood(this, target, output, axis=-1):
+        target = tf.cast(target, dtype="float32")
+        output = tf.convert_to_tensor(output, dtype= "float32")
+        epsilon = 1e-07
+        output = tf.clip_by_value(output, epsilon, 1.0 - epsilon)
+        return tf.reduce_sum(tf.reduce_sum(target * tf.math.log(output), axis))
 
     """End_________________________________________________________________________"""
 
@@ -534,7 +497,7 @@ if __name__ == '__main__':
     v = {'1': F1, '0': F2, '2': F3}
 
 
-    test.creat_model(formulaDict=v, errorDist=gumbel, errorLoc=0, errorScale=1, correlation=False, gamma=1e4)
+    test.create_model(formulaDict=v, errorDist=gumbel, errorLoc=0, errorScale=1, correlation=False, gamma=1e4)
 
     history, model = test.fit_model(target)
 

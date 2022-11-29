@@ -42,7 +42,7 @@ v = {'1': U2, '0': U1 , '2':U3}
 
 
 
-test.creat_model(formulaDict=v, errorDist=normal, correlation=True, errorLoc=0, errorScale=1, gamma=1e4)
+test.create_model(formulaDict=v, errorDist=normal, correlation=True, errorLoc=0, errorScale=1, gamma=1e4)
 
 history, model = test.fit_model(target)
 

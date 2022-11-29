@@ -39,6 +39,28 @@ class Formula:
                     z.append(arg[1].name)
                     Formula.dataFrame = pd.concat([Formula.dataFrame, arg[1]], axis=1)
                     Formula.dataFrame.columns = z
+    def createTestData(dataset):
+        if len(Formula.dataFrame.columns) == 0:
+            print('Please determine your train data. In this way, you need to train model or load a model.')
+            return 'Please determine your train data. I this way, you need to train model or load a model.'
+        notExistcol = []
+        nexist = False
+        for col in Formula.dataFrame.columns:
+            if col not in dataset.columns:
+                notExistcol.append(col)
+                nexist = True
+        else:
+            if nexist:
+                print('This column names not exist in the test data: ', notExistcol)
+                return ''
+
+        # Creating a local database based on train data.
+        # print(dataset.columns)
+        # print(Formula.dataFrame.columns)
+        testdata = dataset[list(Formula.dataFrame.columns)]
+        # print(testdata.columns)
+
+        return testdata
 
     def get_args(self):
         text = ''
