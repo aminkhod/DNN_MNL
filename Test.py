@@ -28,13 +28,13 @@ W2 = Beta('w2', 0, 0)
 
 W3 = Beta('w3', 0, 0)
 
-W4 = Beta('w4', 1, 1)
+W4 = Beta('w4', 0, 0)
 
-W5 = Beta('w5', 1, 1)
+W5 = Beta('w5', 0, 0)
 
 U2 = Formula([(W1, a2), (W2, b2), (W3, p2), (W4, q2)])
 
-U1 = Formula([(W1, a1), (W2, b1), (W3, p1), (W5, q3)])
+U1 = Formula([(W1, a1), (W2, b1), (W3, p1), (W5, q1)])
 
 U3 = Formula([( W1, a3), (W2, b3), (W3, p3)],errorWeight=1)
 

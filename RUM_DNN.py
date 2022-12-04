@@ -337,7 +337,9 @@ class RUM_DNN():
         this.result['constraint'] = constraint
         output = this.model.predict(this.dataset)
         neg_log = this.Neg_likelihood(target, output)
-        print('Negetive Loglikelihood:   ', neg_log)
+        print('Negetive Loglikelihood:   ')
+        with tf.compat.v1.Session() as sess:
+            print(sess.run( neg_log))
         return (this.history, this.model)
 
     """Extracting Weights__________________________________________________________"""
@@ -370,7 +372,6 @@ class RUM_DNN():
         # ploting parameters history
         epoch = np.arange(1, this.epochs + 1, 1)
         betaNames = list(this.result['Parameters'])
-        print(betaNames)
         if this.correlation:
             if len(Formula.formulaList) == 3:
                 for j in range(len(this.parameters)):

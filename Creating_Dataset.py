@@ -19,7 +19,7 @@ import random as r
 
 """Dataset___________________________________________________________________"""
 o = 10000 #observations
-d = 2 #alternatives
+d = 3 #alternatives
 n = d*5 #features
 
 Bp = -1 #parameters
@@ -27,7 +27,7 @@ Ba = 0.5
 Bb = 0.5
 Bq = 1
 
-cor = 0 #being correlated
+cor = 1 #being correlated
 
 data = np.zeros((o,n))
 for i in range(n):
@@ -72,33 +72,40 @@ if cor==1 :
     
     x = np.vstack((Error1,Error2))
     
-    r1=r.random() # just for a binary case!
+    r1=0.4 # just for a binary case!
 
     
     L = [[1,0],[r1,np.sqrt(1-np.square(r1))]]
     
     Error =np.transpose( L @ x)
     
+    V[:,0] = V[:,0] + Error[:,0]
+    V[:,1] = V[:,1] + Error[:,1]
+    U = V
+    U[:,0] = U[:,0] - U[:,2]
+    U[:,1] = U[:,1] - U[:,2]
+    U[:,2] = U[:,2] - U[:,2]    
+    
 else:
-    Error = np.random.normal(loc = 0, scale = 1, size = (o,d))
-
+    Error = np.random.gumbel(loc = 0, scale = 1, size = (o,d))
+    U = V + Error
 
     
-U = V + Error
+
 U = pd.DataFrame(U)
 data['choice'] = (U.T).idxmax(axis=0)
 
 
 print(data['choice'].value_counts())
 
-lists=['a1','b1','p1','q1','a2','b2','p2','q2','choice']
+lists=['a1','b1','p1','q1','a2','b2','p2','q2','a3','b3','p3','q3','choice']
 
 dataset = data[lists]
 
 if cor==1 :
     L = pd.DataFrame(L)
-    dataset.to_excel('Dataset_MNP.xlsx', index='Flase')
-    L.to_excel('Cor_MNP.xlsx', index='Flase')
+    dataset.to_excel('Dataset_MNP_cor2.xlsx', index='Flase')
+#    L.to_excel('Cor_MNP.xlsx', index='Flase')
     
 else:
     dataset.to_excel('Dataset_MNL.xlsx', index='Flase')
