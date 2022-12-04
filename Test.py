@@ -11,7 +11,7 @@ import pandas as pd
 
 
 
-test = RUM_DNN(iternum=2000, epochs=50)
+test = RUM_DNN(iternum=20000, epochs=50)
 #Dataset = pd.read_excel('Dataset_MNL.xlsx')
 Dataset = pd.read_excel('Dataset_MNP_cor.xlsx')
 #Dataset = pd.read_excel('Dataset_MNP.xlsx')

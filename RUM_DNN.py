@@ -14,6 +14,11 @@ import timeit
 
 from builtins import isinstance
 
+import ctypes
+from dask.distributed import Client
+import joblib
+import dask.dataframe as dd
+
 import pandas as pd
 import numpy as np
 
@@ -433,10 +438,24 @@ class RUM_DNN():
             for i in range(len(Hessian_lines_op)):
                 get_Hess_funcs[i] = K.function(inputs=input_tensors, outputs=Hessian_lines_op[i])
 
+
+            # def trim_memory() -> int:
+            #     libc = ctypes.CDLL("libc.so.6")
+            #     return libc.malloc_trim(0)
+
+            client = Client(processes=False)  # create local cluster
+            # client.run(trim_memory)
+
+            # client = Client("scheduler-address:8786")  # or connect to remote cluster
             Hessian = []
-            func_inputs = [model_inputs, labels]
-            for j in range(len(Hessian_lines_op)):
-                Hessian.append((np.array(get_Hess_funcs[j](func_inputs))))
+            func_inputs = [dd.from_pandas(this.dataset, npartitions=2), this.target]
+            with joblib.parallel_backend('dask'):
+                for j in range(len(Hessian_lines_op)):
+                    Hessian.append((np.array(get_Hess_funcs[j](func_inputs))))
+
+            # func_inputs = [model_inputs, labels]
+            # for j in range(len(Hessian_lines_op)):
+            #     Hessian.append((np.array(get_Hess_funcs[j](func_inputs))))
 
             Hessian = np.squeeze(Hessian)
             return Hessian

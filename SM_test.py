@@ -10,13 +10,13 @@ from sklearn.metrics import accuracy_score
 """Dataset_____________________________________________________________________"""
 
 
-df_train = pd.read_excel('D:/Newsha/Dr.GHasri/Amin/Montecarlo/Datasets/SM/SM_train.xlsx')
-df_test = pd.read_excel('D:/Newsha/Dr.GHasri/Amin/Montecarlo/Datasets/SM/SM_test.xlsx')
+df_train = pd.read_excel('SM_train.xlsx')
+df_test = pd.read_excel('SM_test.xlsx')
 
 """Preperation_________________________________________________________________"""
 df_train.drop('Unnamed: 0', inplace=True, axis=1)
 df_train['CHOICE'] =df_train['CHOICE']-1
-rum_dnn = RUM_DNN(iternum=2200, epochs=500)
+rum_dnn = RUM_DNN(iternum=30000, epochs=4)
 target = rum_dnn.dense_to_one_hot(df_train['CHOICE'])
 
 globals().update(dict(df_train))
@@ -73,15 +73,15 @@ rum_dnn.STDError()
 
 # # Associate utility functions with the numbering of alternatives
 # V = {0: V_TRAIN, 1: V_SM, 2: V_CAR}
-y_pred2 = rum_dnn.predict(formulaDict=V, model=model, dataset=df_test)
-
-
-df_test['CHOICE'] = df_test['CHOICE'] - 1
-classes2 = rum_dnn.dense_to_one_hot(labels_dense=df_test['CHOICE'])
-pred = pd.DataFrame(y_pred2).idxmax(axis=1)
-# print(pred.value_counts())
-# print(df_test['CHOICE'].value_counts())
-print("Accuracy of DPNN :  ", accuracy_score(pred, df_test['CHOICE']))
-
-
-
+# y_pred2 = rum_dnn.predict(formulaDict=V, model=model, dataset=df_test)
+#
+#
+# df_test['CHOICE'] = df_test['CHOICE'] - 1
+# classes2 = rum_dnn.dense_to_one_hot(labels_dense=df_test['CHOICE'])
+# pred = pd.DataFrame(y_pred2).idxmax(axis=1)
+# # print(pred.value_counts())
+# # print(df_test['CHOICE'].value_counts())
+# print("Accuracy of DPNN :  ", accuracy_score(pred, df_test['CHOICE']))
+#
+#
+#
